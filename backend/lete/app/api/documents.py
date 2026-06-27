@@ -20,6 +20,12 @@ async def upload_document(
     file: UploadFile = File(...),
     conn: sqlite3.Connection = Depends(get_db_connection),
 ):
+    import uuid
+    try:
+        uuid.UUID(workspace_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid workspace ID format")
+
     repo = DocumentRepository(conn)
     
     # Ensure directory exists
