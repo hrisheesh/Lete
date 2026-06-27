@@ -11,8 +11,8 @@ def test_generate_contextual_header_all_fields():
         section_index=3
     )
     
-    assert "[Document: Apple_10K_2024.pdf | Page: 14 | Section Index: 3]" in result
-    assert "This is an important risk factor" in result
+    assert result == "[Document: Apple_10K_2024.pdf | Page: 14 | Section: 3]"
+    assert chunk_text not in result
 
 def test_generate_contextual_header_only_doc():
     chunk_text = "Just some plain text."
@@ -23,6 +23,6 @@ def test_generate_contextual_header_only_doc():
         chunk_text=chunk_text
     )
     
-    assert "[Document: notes.txt]" in result
-    assert "Just some plain text." in result
+    assert result == "[Document: notes.txt]"
+    assert chunk_text not in result
     assert "Page:" not in result

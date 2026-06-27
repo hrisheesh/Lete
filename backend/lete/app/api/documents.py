@@ -97,6 +97,7 @@ def process_document(
     doc_repo = DocumentRepository(conn)
     job_repo = ProcessingJobRepository(conn)
     section_repo = DocumentSectionRepository(conn)
+    chunk_repo = ChunkRepository(conn)
     
     doc = doc_repo.get(document_id)
     if not doc:
@@ -112,17 +113,45 @@ def process_document(
     ext = doc.filename.split('.')[-1].lower() if '.' in doc.filename else 'txt'
     
     try:
+        # Phase 1: Parse sections
         parser = ParserRegistry.get_parser(ext)
         sections = parser.parse(file_path, document_id)
         
-        # Clear existing sections just in case
         section_repo.delete_by_document(document_id)
-        
-        # Save sections
+        created_sections = []
         for section in sections:
-            section_repo.create(section)
+            created = section_repo.create(section)
+            created_sections.append(created)
             
-        # Update Job Status
+        # Update job to chunking phase
+        job = job_repo.update(job.id, ProcessingJobUpdate(status="chunking"))
+        
+        # Phase 2: Chunk sections
+        chunk_repo.delete_by_document(document_id)
+        chunker = RecursiveChunker()
+        chunk_index = 0
+        
+        for section in created_sections:
+            raw_chunks = chunker.chunk(section.content)
+            for rc in raw_chunks:
+                header = generate_contextual_header(
+                    document_name=doc.filename,
+                    chunk_text=rc,
+                    page_number=section.page_number,
+                    section_index=section.section_index
+                )
+                
+                chunk_repo.create(ChunkCreate(
+                    document_id=document_id,
+                    section_id=section.id,
+                    text=rc,
+                    contextual_header=header,
+                    chunk_index=chunk_index,
+                    token_count=len(rc) // 4
+                ))
+                chunk_index += 1
+                
+        # Update Job Status to completed
         job = job_repo.update(job.id, ProcessingJobUpdate(status="completed"))
         return job
         
@@ -143,52 +172,7 @@ from lete.app.repositories.chunk import ChunkRepository
 from lete.app.chunking.recursive_chunker import RecursiveChunker
 from lete.app.chunking.context import generate_contextual_header
 
-@router.post("/documents/{document_id}/chunk")
-def chunk_document(
-    document_id: str,
-    conn: sqlite3.Connection = Depends(get_db_connection)
-):
-    doc_repo = DocumentRepository(conn)
-    section_repo = DocumentSectionRepository(conn)
-    chunk_repo = ChunkRepository(conn)
-    
-    doc = doc_repo.get(document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-        
-    sections = section_repo.list_by_document(document_id)
-    if not sections:
-        raise HTTPException(status_code=400, detail="Document has no parsed sections")
-        
-    # Clear existing chunks
-    chunk_repo.delete_by_document(document_id)
-    
-    chunker = RecursiveChunker()
-    chunk_index = 0
-    
-    for section in sections:
-        raw_chunks = chunker.chunk(section.content)
-        for rc in raw_chunks:
-            # Generate contextual header
-            header = generate_contextual_header(
-                document_name=doc.filename,
-                chunk_text=rc,
-                page_number=section.page_number,
-                section_index=section.section_index
-            )
-            
-            # Save chunk
-            chunk_repo.create(ChunkCreate(
-                document_id=document_id,
-                section_id=section.id,
-                text=rc,
-                contextual_header=header,
-                chunk_index=chunk_index,
-                token_count=len(rc) // 4  # rough heuristic
-            ))
-            chunk_index += 1
-            
-    return {"status": "success", "total_chunks": chunk_index}
+# The POST /chunk endpoint has been merged into POST /process
 
 @router.get("/documents/{document_id}/chunks", response_model=List[ChunkResponse])
 def get_document_chunks(

@@ -15,14 +15,10 @@ def test_chunking_endpoints(clear_db):
     assert res_upload.status_code == 200
     doc_id = res_upload.json()["id"]
     
-    # 3. Process it to generate sections
+    # 3. Process it to generate sections and chunks
     res_process = client.post(f"/api/v1/documents/{doc_id}/process")
     assert res_process.status_code == 200
-    
-    # 4. Chunk the document
-    res_chunk = client.post(f"/api/v1/documents/{doc_id}/chunk")
-    assert res_chunk.status_code == 200
-    assert res_chunk.json()["status"] == "success"
+    assert res_process.json()["status"] == "completed"
     
     # 5. Fetch chunks
     res_get_chunks = client.get(f"/api/v1/documents/{doc_id}/chunks")

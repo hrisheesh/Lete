@@ -89,17 +89,7 @@ export default function WorkspaceDashboard() {
       });
       
       if (!processRes.ok) {
-        alert("Failed to extract text from document");
-        return;
-      }
-      
-      // Step 2: Chunk the extracted text
-      const chunkRes = await fetch(`http://127.0.0.1:8000/api/v1/documents/${docId}/chunk`, {
-        method: "POST"
-      });
-      
-      if (!chunkRes.ok) {
-        alert("Failed to chunk document text");
+        alert("Failed to process and chunk document");
         return;
       }
       
