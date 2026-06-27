@@ -113,6 +113,15 @@ def bootstrap_db():
             embedding float[1536]
         )
     """)
+    
+    # Create chunks_fts virtual table for keyword search
+    cursor.execute("""
+        CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
+            chunk_id UNINDEXED,
+            text,
+            tokenize='porter unicode61'
+        )
+    """)
     conn.commit()
     
     # Create Indices for performance on foreign keys
