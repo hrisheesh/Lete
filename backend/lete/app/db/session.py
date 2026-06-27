@@ -12,11 +12,16 @@ def get_db_path() -> str:
     return path
 
 
+import sqlite_vec
+
 def get_connection() -> sqlite3.Connection:
-    """Create and return a raw SQLite connection.
-    In the future, extensions like sqlite-vec can be loaded here.
-    """
+    """Create and return a raw SQLite connection with sqlite-vec enabled."""
     conn = sqlite3.connect(get_db_path(), check_same_thread=False)
+    # Enable extension loading and load sqlite-vec
+    conn.enable_load_extension(True)
+    sqlite_vec.load(conn)
+    conn.enable_load_extension(False)
+    
     # Return rows as dictionaries for easier data mapping
     conn.row_factory = sqlite3.Row
     return conn

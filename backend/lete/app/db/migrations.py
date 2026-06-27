@@ -95,6 +95,26 @@ def bootstrap_db():
 
     conn.commit()
     
+    # Create embedding_cache table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS embedding_cache (
+            id TEXT PRIMARY KEY,
+            text_hash TEXT UNIQUE NOT NULL,
+            embedding BLOB NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Create chunk_embeddings vec0 virtual table
+    # We use +chunk_id to store auxiliary TEXT identifier. Fixed to 1536 dimensions (OpenAI standard)
+    cursor.execute("""
+        CREATE VIRTUAL TABLE IF NOT EXISTS chunk_embeddings USING vec0(
+            +chunk_id TEXT,
+            embedding float[1536]
+        )
+    """)
+    conn.commit()
+    
     # Create Indices for performance on foreign keys
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_workspace_id ON documents(workspace_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_document_id ON processing_jobs(document_id)")
