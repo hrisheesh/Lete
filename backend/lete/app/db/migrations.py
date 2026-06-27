@@ -74,6 +74,24 @@ def bootstrap_db():
         )
         """
     )
+    
+    # Create chunks table
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS chunks (
+            id TEXT PRIMARY KEY,
+            document_id TEXT NOT NULL,
+            section_id TEXT NOT NULL,
+            text TEXT NOT NULL,
+            contextual_header TEXT,
+            chunk_index INTEGER NOT NULL,
+            token_count INTEGER,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
+            FOREIGN KEY (section_id) REFERENCES document_sections(id) ON DELETE CASCADE
+        )
+        """
+    )
 
     conn.commit()
     conn.close()
