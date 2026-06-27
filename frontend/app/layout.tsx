@@ -36,6 +36,9 @@ export default function RootLayout({
                   <Link href="/" className="text-[14px] font-medium text-steel">
                     Home
                   </Link>
+                  <Link href="/workspaces" className="text-[14px] font-medium text-steel hover:text-ink transition-colors">
+                    Workspaces
+                  </Link>
                   <Link href="/settings" className="text-[14px] font-medium text-ink">
                     Settings
                   </Link>
