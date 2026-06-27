@@ -30,7 +30,45 @@ def bootstrap_db():
         )
     """)
 
+    # Create documents table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS documents (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            file_type TEXT,
+            file_size INTEGER,
+            file_hash TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        )
+    """)
     conn.commit()
+    
+    # Auto-populate default provider settings if empty
+    from lete.app.config.settings import settings
+    import uuid
+    import datetime
+    
+    cursor.execute("SELECT COUNT(*) FROM provider_settings")
+    if cursor.fetchone()[0] == 0 and settings.default_api_key:
+        cursor.execute("""
+            INSERT INTO provider_settings 
+            (id, provider_type, base_url, api_key, model_name, embedding_model_name, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            str(uuid.uuid4()),
+            settings.default_provider_type,
+            settings.default_base_url,
+            settings.default_api_key,
+            settings.default_model_name,
+            settings.default_embedding_model,
+            datetime.datetime.utcnow().isoformat(),
+            datetime.datetime.utcnow().isoformat()
+        ))
+        conn.commit()
+        
     conn.close()
 
 

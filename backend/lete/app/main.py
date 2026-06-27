@@ -23,3 +23,7 @@ from lete.app.api.settings import router as settings_router
 app.include_router(
     settings_router, prefix=f"{settings.api_v1_str}/settings", tags=["settings"]
 )
+from lete.app.api.documents import router as documents_router
+app.include_router(
+    documents_router, prefix=f"{settings.api_v1_str}", tags=["documents"]
+)
