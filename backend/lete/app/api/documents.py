@@ -220,14 +220,16 @@ def process_document(
             
         embed_repo.store_chunk_embeddings(chunk_id_to_embedding)
         
-        # Update Job Status to completed
+        # Update Job Status and Document Status to completed/processed
         job = job_repo.update(job.id, ProcessingJobUpdate(status="completed"))
+        doc_repo.update_status(document_id, "processed")
         return job
         
     except Exception as e:
         # Clean up any chunks created in this failed run to prevent data leakage
         chunk_repo.delete_by_document(document_id)
         job = job_repo.update(job.id, ProcessingJobUpdate(status="failed", error_message=str(e)))
+        doc_repo.update_status(document_id, "failed")
         return job
 
 @router.get("/documents/{document_id}/sections", response_model=List[DocumentSectionResponse])

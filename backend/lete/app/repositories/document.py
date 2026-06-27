@@ -61,6 +61,12 @@ class DocumentRepository:
         )
         rows = cursor.fetchall()
         return [DocumentResponse(**dict(row)) for row in rows]
+        
+    def update_status(self, doc_id: str, status: str) -> Optional[DocumentResponse]:
+        cursor = self.conn.cursor()
+        cursor.execute("UPDATE documents SET status = ? WHERE id = ?", (status, doc_id))
+        self.conn.commit()
+        return self.get(doc_id)
 
     def delete(self, doc_id: str) -> bool:
         cursor = self.conn.cursor()
