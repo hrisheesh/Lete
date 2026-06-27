@@ -45,30 +45,37 @@ def bootstrap_db():
         )
     """)
     conn.commit()
-    
-    # Auto-populate default provider settings if empty
-    from lete.app.config.settings import settings
-    import uuid
-    import datetime
-    
-    cursor.execute("SELECT COUNT(*) FROM provider_settings")
-    if cursor.fetchone()[0] == 0 and settings.default_api_key:
-        cursor.execute("""
-            INSERT INTO provider_settings 
-            (id, provider_type, base_url, api_key, model_name, embedding_model_name, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            str(uuid.uuid4()),
-            settings.default_provider_type,
-            settings.default_base_url,
-            settings.default_api_key,
-            settings.default_model_name,
-            settings.default_embedding_model,
-            datetime.datetime.utcnow().isoformat(),
-            datetime.datetime.utcnow().isoformat()
-        ))
-        conn.commit()
-        
+    # Create processing_jobs table
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS processing_jobs (
+            id TEXT PRIMARY KEY,
+            document_id TEXT NOT NULL,
+            status TEXT NOT NULL, -- 'queued', 'parsing', 'completed', 'failed'
+            error_message TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    # Create document_sections table
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS document_sections (
+            id TEXT PRIMARY KEY,
+            document_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            page_number INTEGER,
+            section_index INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    conn.commit()
     conn.close()
 
 

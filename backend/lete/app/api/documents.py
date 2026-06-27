@@ -82,3 +82,59 @@ def delete_document(
         os.remove(file_path)
         
     return None
+
+from lete.app.schemas.job import ProcessingJobCreate, ProcessingJobResponse, ProcessingJobUpdate
+from lete.app.schemas.section import DocumentSectionResponse
+from lete.app.repositories.job import ProcessingJobRepository
+from lete.app.repositories.section import DocumentSectionRepository
+from lete.app.parsing.registry import ParserRegistry
+
+@router.post("/documents/{document_id}/process", response_model=ProcessingJobResponse)
+def process_document(
+    document_id: str,
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    doc_repo = DocumentRepository(conn)
+    job_repo = ProcessingJobRepository(conn)
+    section_repo = DocumentSectionRepository(conn)
+    
+    doc = doc_repo.get(document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    # Create Job
+    job = job_repo.create(ProcessingJobCreate(
+        document_id=document_id,
+        status="parsing"
+    ))
+    
+    file_path = os.path.join(UPLOAD_DIR, doc.workspace_id, doc.file_hash)
+    ext = doc.filename.split('.')[-1].lower() if '.' in doc.filename else 'txt'
+    
+    try:
+        parser = ParserRegistry.get_parser(ext)
+        sections = parser.parse(file_path, document_id)
+        
+        # Clear existing sections just in case
+        section_repo.delete_by_document(document_id)
+        
+        # Save sections
+        for section in sections:
+            section_repo.create(section)
+            
+        # Update Job Status
+        job = job_repo.update(job.id, ProcessingJobUpdate(status="completed"))
+        return job
+        
+    except Exception as e:
+        job = job_repo.update(job.id, ProcessingJobUpdate(status="failed", error_message=str(e)))
+        return job
+
+@router.get("/documents/{document_id}/sections", response_model=List[DocumentSectionResponse])
+def get_document_sections(
+    document_id: str,
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    section_repo = DocumentSectionRepository(conn)
+    return section_repo.list_by_document(document_id)
+
