@@ -19,13 +19,24 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         if not texts:
             return []
             
+        all_embeddings = []
+        batch_size = 500
+        
         try:
-            response = self.client.embeddings.create(
-                input=texts,
-                model=self.model_name
-            )
-            # The response contains a data array matching the input order
-            return [data.embedding for data in response.data]
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i:i + batch_size]
+                response = self.client.embeddings.create(
+                    input=batch,
+                    model=self.model_name
+                )
+                # Ensure we only return 1536 dimensions as required by our sqlite-vec schema
+                for data in response.data:
+                    emb = data.embedding
+                    if len(emb) != 1536:
+                        raise ValueError(f"Unsupported embedding dimension: {len(emb)}. Lete currently requires 1536-dimensional models.")
+                    all_embeddings.append(emb)
+                    
+            return all_embeddings
         except Exception as e:
             print(f"Error generating embeddings: {e}")
             raise e

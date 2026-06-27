@@ -11,6 +11,9 @@ class VectorSearchService:
         Search for the closest chunks using the sqlite-vec virtual table.
         Uses a two-step query to avoid SQLite query planner issues with virtual tables.
         """
+        if not query_embedding:
+            return []
+            
         query_bytes = sqlite_vec.serialize_float32(query_embedding)
         cursor = self.conn.cursor()
         
