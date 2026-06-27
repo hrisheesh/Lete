@@ -114,13 +114,42 @@ def bootstrap_db():
         )
     """)
     
-    # Create chunks_fts virtual table for keyword search
+    # Create chunks_fts virtual table for keyword search (External Content Table)
     cursor.execute("""
         CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
-            chunk_id UNINDEXED,
             text,
+            contextual_header,
+            content='chunks',
+            content_rowid='rowid',
             tokenize='porter unicode61'
         )
+    """)
+    
+    # Create Triggers to auto-sync FTS5 index
+    cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks
+        BEGIN
+            INSERT INTO chunks_fts(rowid, text, contextual_header) 
+            VALUES (new.rowid, new.text, new.contextual_header);
+        END;
+    """)
+    
+    cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks
+        BEGIN
+            INSERT INTO chunks_fts(chunks_fts, rowid, text, contextual_header) 
+            VALUES ('delete', old.rowid, old.text, old.contextual_header);
+        END;
+    """)
+    
+    cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks
+        BEGIN
+            INSERT INTO chunks_fts(chunks_fts, rowid, text, contextual_header) 
+            VALUES ('delete', old.rowid, old.text, old.contextual_header);
+            INSERT INTO chunks_fts(rowid, text, contextual_header) 
+            VALUES (new.rowid, new.text, new.contextual_header);
+        END;
     """)
     conn.commit()
     
