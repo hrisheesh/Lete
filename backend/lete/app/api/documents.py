@@ -108,11 +108,19 @@ from lete.app.repositories.chunk import ChunkRepository
 from lete.app.chunking.recursive_chunker import RecursiveChunker
 from lete.app.chunking.context import generate_contextual_header
 
-@router.post("/documents/{document_id}/process", response_model=ProcessingJobResponse)
-def process_document(
-    document_id: str,
-    conn: sqlite3.Connection = Depends(get_db_connection)
-):
+from fastapi import BackgroundTasks
+
+def run_processing_pipeline(job_id: str, document_id: str):
+    """
+    Background worker for processing documents asynchronously.
+    Creates a fresh database connection to avoid thread-safety issues.
+    """
+    conn = sqlite3.connect("lete.db")
+    conn.enable_load_extension(True)
+    import sqlite_vec
+    sqlite_vec.load(conn)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    
     doc_repo = DocumentRepository(conn)
     job_repo = ProcessingJobRepository(conn)
     section_repo = DocumentSectionRepository(conn)
@@ -120,14 +128,9 @@ def process_document(
     
     doc = doc_repo.get(document_id)
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        conn.close()
+        return
         
-    # Create Job
-    job = job_repo.create(ProcessingJobCreate(
-        document_id=document_id,
-        status="parsing"
-    ))
-    
     file_path = os.path.join(UPLOAD_DIR, doc.workspace_id, doc.file_hash)
     ext = doc.filename.split('.')[-1].lower() if '.' in doc.filename else 'txt'
     
@@ -143,7 +146,7 @@ def process_document(
             created_sections.append(created)
             
         # Update job to chunking phase
-        job = job_repo.update(job.id, ProcessingJobUpdate(status="chunking"))
+        job_repo.update(job_id, ProcessingJobUpdate(status="chunking"))
         
         # Phase 2: Chunk sections
         chunk_repo.delete_by_document(document_id)
@@ -173,12 +176,11 @@ def process_document(
                 chunk_index += 1
                 
         # Phase 3: Embeddings
-        job = job_repo.update(job.id, ProcessingJobUpdate(status="embedding"))
+        job_repo.update(job_id, ProcessingJobUpdate(status="embedding"))
         
         from lete.app.api.settings import get_settings
         from lete.app.providers.embeddings import OpenAIEmbeddingProvider
         from lete.app.repositories.embedding import EmbeddingRepository
-        import sqlite_vec
         
         prov_settings = get_settings(conn)
         embed_provider = OpenAIEmbeddingProvider(
@@ -221,16 +223,43 @@ def process_document(
         embed_repo.store_chunk_embeddings(chunk_id_to_embedding)
         
         # Update Job Status and Document Status to completed/processed
-        job = job_repo.update(job.id, ProcessingJobUpdate(status="completed"))
+        job_repo.update(job_id, ProcessingJobUpdate(status="completed"))
         doc_repo.update_status(document_id, "processed")
-        return job
         
     except Exception as e:
         # Clean up any chunks created in this failed run to prevent data leakage
         chunk_repo.delete_by_document(document_id)
-        job = job_repo.update(job.id, ProcessingJobUpdate(status="failed", error_message=str(e)))
+        job_repo.update(job_id, ProcessingJobUpdate(status="failed", error_message=str(e)))
         doc_repo.update_status(document_id, "failed")
-        return job
+    finally:
+        conn.close()
+
+@router.post("/documents/{document_id}/process", response_model=ProcessingJobResponse, status_code=202)
+def process_document(
+    document_id: str,
+    background_tasks: BackgroundTasks,
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    doc_repo = DocumentRepository(conn)
+    job_repo = ProcessingJobRepository(conn)
+    
+    doc = doc_repo.get(document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    # Create Job
+    job = job_repo.create(ProcessingJobCreate(
+        document_id=document_id,
+        status="parsing"
+    ))
+    
+    # Mark document as processing immediately so the frontend knows it's started
+    doc_repo.update_status(document_id, "processing")
+    
+    # Enqueue background task
+    background_tasks.add_task(run_processing_pipeline, job.id, document_id)
+    
+    return job
 
 @router.get("/documents/{document_id}/sections", response_model=List[DocumentSectionResponse])
 def get_document_sections(

@@ -47,16 +47,25 @@ export default function DocumentList({ documents, onDelete, onProcess, onViewChu
                 {formatSize(doc.file_size)}
               </td>
               <td className="px-6 py-4 text-sm">
-                <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold capitalize">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold capitalize ${
+                  doc.status === 'processed' ? 'bg-green-100 text-green-700' :
+                  doc.status === 'failed' ? 'bg-red-100 text-red-700' :
+                  doc.status === 'processing' ? 'bg-blue-100 text-blue-700 animate-pulse' :
+                  'bg-surface-hover text-steel'
+                }`}>
+                  {doc.status === 'processing' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+                  )}
                   {doc.status}
                 </span>
               </td>
               <td className="px-6 py-4 text-right space-x-4">
                 <button
                   onClick={() => onProcess(doc.id)}
-                  className="text-primary hover:text-primary/80 font-semibold text-sm transition-colors"
+                  disabled={doc.status === 'processing'}
+                  className="text-primary hover:text-primary/80 font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Process
+                  {doc.status === 'processing' ? 'Processing...' : 'Process'}
                 </button>
                 <button
                   onClick={() => onViewChunks(doc.id)}

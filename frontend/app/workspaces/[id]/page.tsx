@@ -79,25 +79,35 @@ export default function WorkspaceDashboard() {
     }
   };
 
+  useEffect(() => {
+    // Polling mechanism: if any document is "processing", fetch every 2 seconds
+    const hasProcessing = documents.some(doc => doc.status === "processing");
+    let intervalId: NodeJS.Timeout;
+    
+    if (hasProcessing) {
+      intervalId = setInterval(() => {
+        fetchDocuments();
+      }, 2000);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [documents, id]);
+
   const handleProcessDocument = async (docId: string) => {
     if (isProcessing) return;
     setIsProcessing(docId);
     try {
       // Step 1: Process raw text
-      const processRes = await fetch(`http://127.0.0.1:8000/api/v1/documents/${docId}/process`, {
+      await fetch(`http://127.0.0.1:8000/api/v1/documents/${docId}/process`, {
         method: "POST"
       });
-      
-      if (!processRes.ok) {
-        alert("Failed to process and chunk document");
-        return;
-      }
-      
-      alert("Document successfully processed and chunked!");
+      // Document is now processing in the background
       fetchDocuments();
     } catch (e) {
       console.error(e);
-      alert("An error occurred during processing");
+      alert("An error occurred starting the process");
     } finally {
       setIsProcessing(null);
     }
