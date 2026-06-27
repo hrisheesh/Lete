@@ -5,7 +5,7 @@ class KeywordRepository:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
 
-    def search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query: str, workspace_id: str, limit: int = 5) -> List[Dict[str, Any]]:
         """
         Perform a full-text search on chunks using FTS5 BM25 scoring.
         Uses the `chunks_fts` external content table which is automatically 
@@ -14,15 +14,15 @@ class KeywordRepository:
         if not query or not query.strip():
             return []
             
+        # Sanitize query for FTS5 to prevent OperationalError on reserved keywords or quotes
+        # We replace any non-alphanumeric character with a space
+        import re
+        sanitized_query = re.sub(r'[^\w\s]', ' ', query).strip()
+        if not sanitized_query:
+            return []
+            
         cursor = self.conn.cursor()
         
-        # SQLite FTS5 matches can be constructed safely using standard parameterization.
-        # However, we must properly escape FTS5 special characters if we want a pure raw text match.
-        # For a simple implementation, wrapping the query in quotes forces a phrase match,
-        # but to allow standard keyword matching, we can just pass the raw query.
-        
-        # BM25 score in FTS5 is negative (more negative = better match)
-        # We multiply by -1 to return a positive score where higher is better
         try:
             cursor.execute(
                 """
@@ -36,11 +36,12 @@ class KeywordRepository:
                     bm25(chunks_fts) * -1 as score
                 FROM chunks_fts f
                 JOIN chunks c ON c.rowid = f.rowid
-                WHERE chunks_fts MATCH ?
+                JOIN documents d ON d.id = c.document_id
+                WHERE chunks_fts MATCH ? AND d.workspace_id = ?
                 ORDER BY bm25(chunks_fts)
                 LIMIT ?
                 """,
-                (query, limit)
+                (sanitized_query, workspace_id, limit)
             )
         except sqlite3.OperationalError as e:
             # If the query contains malformed FTS syntax (e.g. unmatched quotes), FTS5 throws an OperationalError

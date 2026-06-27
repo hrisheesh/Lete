@@ -47,6 +47,7 @@ def search_workspace(
     retriever = HybridRetriever(conn)
     results = retriever.search(
         query=request.query,
+        workspace_id=workspace_id,
         query_embedding=query_embedding,
         limit=request.limit
     )

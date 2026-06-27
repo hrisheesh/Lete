@@ -16,6 +16,7 @@ class HybridRetriever:
     def search(
         self, 
         query: str, 
+        workspace_id: str,
         query_embedding: Optional[List[float]] = None, 
         limit: int = 5,
         rrf_k: int = 60
@@ -25,6 +26,7 @@ class HybridRetriever:
         
         Args:
             query: The raw text query (for FTS5 keyword search)
+            workspace_id: The workspace to restrict the search to
             query_embedding: The dense vector for the query (for semantic search)
             limit: Maximum number of chunks to return
             rrf_k: The RRF constant (typically 60)
@@ -33,13 +35,17 @@ class HybridRetriever:
             List of chunk dictionaries sorted by hybrid_score descending.
         """
         
+        # Deep Pooling: Retrieve more chunks than requested so RRF can work its magic
+        # on a larger candidate set, rather than truncating before fusion.
+        pool_size = max(60, limit * 2)
+        
         # 1. Fetch Keyword Results
-        keyword_results = self.keyword_repo.search(query, limit=limit)
+        keyword_results = self.keyword_repo.search(query, workspace_id, limit=pool_size)
         
         # 2. Fetch Vector Results
         vector_results = []
         if query_embedding:
-            vector_results = self.vector_service.search(query_embedding, limit=limit)
+            vector_results = self.vector_service.search(query_embedding, workspace_id, limit=pool_size)
             
         # 3. Merge and deduplicate using RRF (Reciprocal Rank Fusion)
         # RRF Score = 1 / (k + rank)

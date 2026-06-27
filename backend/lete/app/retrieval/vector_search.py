@@ -6,10 +6,11 @@ class VectorSearchService:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
 
-    def search(self, query_embedding: List[float], limit: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query_embedding: List[float], workspace_id: str, limit: int = 5) -> List[Dict[str, Any]]:
         """
         Search for the closest chunks using the sqlite-vec virtual table.
         Uses a two-step query to avoid SQLite query planner issues with virtual tables.
+        Fetches a larger internal pool (k=100) to safely filter out chunks not belonging to the workspace.
         """
         if not query_embedding:
             return []
@@ -17,7 +18,8 @@ class VectorSearchService:
         query_bytes = sqlite_vec.serialize_float32(query_embedding)
         cursor = self.conn.cursor()
         
-        # Step 1: Query the vector table
+        # Step 1: Query the vector table for a large pool (to account for cross-workspace noise)
+        pool_size = max(100, limit * 10)
         cursor.execute(
             """
             SELECT chunk_id, distance
@@ -25,31 +27,34 @@ class VectorSearchService:
             WHERE embedding MATCH ? AND k = ?
             ORDER BY distance
             """,
-            (query_bytes, limit)
+            (query_bytes, pool_size)
         )
         
         vec_results = cursor.fetchall()
         if not vec_results:
             return []
             
-        # Step 2: Fetch the full chunk data
+        # Step 2: Fetch the full chunk data and filter strictly by workspace_id
         chunk_ids = [row["chunk_id"] for row in vec_results]
         distance_map = {row["chunk_id"]: row["distance"] for row in vec_results}
         
         placeholders = ",".join(["?"] * len(chunk_ids))
+        
+        # We join documents to safely isolate by workspace
         cursor.execute(
             f"""
             SELECT 
-                id as chunk_id,
-                document_id,
-                section_id,
-                text,
-                contextual_header,
-                chunk_index
-            FROM chunks
-            WHERE id IN ({placeholders})
+                c.id as chunk_id,
+                c.document_id,
+                c.section_id,
+                c.text,
+                c.contextual_header,
+                c.chunk_index
+            FROM chunks c
+            JOIN documents d ON d.id = c.document_id
+            WHERE c.id IN ({placeholders}) AND d.workspace_id = ?
             """,
-            chunk_ids
+            (*chunk_ids, workspace_id)
         )
         
         final_results = []
