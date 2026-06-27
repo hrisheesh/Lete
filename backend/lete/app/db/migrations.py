@@ -94,6 +94,15 @@ def bootstrap_db():
     )
 
     conn.commit()
+    
+    # Create Indices for performance on foreign keys
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_workspace_id ON documents(workspace_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_document_id ON processing_jobs(document_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_sections_document_id ON document_sections(document_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chunks_section_id ON chunks(section_id)")
+
+    conn.commit()
     conn.close()
 
 
