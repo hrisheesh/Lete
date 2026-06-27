@@ -27,3 +27,7 @@ from lete.app.api.documents import router as documents_router
 app.include_router(
     documents_router, prefix=f"{settings.api_v1_str}", tags=["documents"]
 )
+from lete.app.api.retrieval import router as retrieval_router
+app.include_router(
+    retrieval_router, prefix=f"{settings.api_v1_str}", tags=["retrieval"]
+)
