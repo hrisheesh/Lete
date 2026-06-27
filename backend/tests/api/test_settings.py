@@ -37,4 +37,6 @@ def test_get_settings_not_found():
     # Wait, the clear_db fixture runs before each test. But test_crud_provider_settings populated it.
     # We rely on clear_db to clear the DB, so it should be empty again.
     response = client.get("/api/v1/settings")
-    assert response.status_code == 404
+    assert response.status_code == 200
+    data = response.json()
+    assert data["provider_type"] == "openai" # default from config

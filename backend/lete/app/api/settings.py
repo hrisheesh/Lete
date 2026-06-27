@@ -10,6 +10,10 @@ from lete.app.providers.anthropic_provider import AnthropicProvider
 
 router = APIRouter()
 
+from lete.app.config.settings import settings
+import uuid
+from datetime import datetime
+
 @router.get("", response_model=ProviderSettingsResponse)
 def get_settings(conn: sqlite3.Connection = Depends(get_db_connection)):
     cursor = conn.cursor()
@@ -18,7 +22,17 @@ def get_settings(conn: sqlite3.Connection = Depends(get_db_connection)):
     row = cursor.fetchone()
     
     if not row:
-        raise HTTPException(status_code=404, detail="Settings not found")
+        # Fallback to .env configuration if database is empty
+        return ProviderSettingsResponse(
+            id=str(uuid.uuid4()),
+            provider_type=settings.provider_type,
+            base_url=settings.base_url,
+            api_key=settings.api_key,
+            model_name=settings.model_name,
+            embedding_model_name=settings.embedding_model_name,
+            created_at=datetime.utcnow().isoformat(),
+            updated_at=datetime.utcnow().isoformat()
+        )
         
     repo = ProviderSettingsRepository(conn)
     return repo.get(row["id"])

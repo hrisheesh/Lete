@@ -5,6 +5,13 @@ class Settings(BaseSettings):
     project_name: str = "Lete API"
     api_v1_str: str = "/api/v1"
     database_url: str = "sqlite:///./lete.db"
+    
+    # Provider Settings (Fallback from .env)
+    provider_type: str = "openai"
+    base_url: str | None = None
+    api_key: str | None = None
+    model_name: str | None = None
+    embedding_model_name: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
