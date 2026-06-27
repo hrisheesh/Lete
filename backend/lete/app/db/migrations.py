@@ -114,6 +114,15 @@ def bootstrap_db():
         )
     """)
     
+    # Check if chunks_fts is stale (missing contextual_header)
+    cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='chunks_fts'")
+    fts_schema = cursor.fetchone()
+    needs_rebuild = False
+    
+    if fts_schema and 'contextual_header' not in fts_schema[0]:
+        cursor.execute("DROP TABLE chunks_fts")
+        needs_rebuild = True
+        
     # Create chunks_fts virtual table for keyword search (External Content Table)
     cursor.execute("""
         CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
@@ -125,6 +134,9 @@ def bootstrap_db():
         )
     """)
     
+    if needs_rebuild:
+        cursor.execute("INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')")
+        
     # Create Triggers to auto-sync FTS5 index
     cursor.execute("""
         CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks
