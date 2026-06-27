@@ -26,20 +26,29 @@ async def upload_document(
     workspace_dir = os.path.join(UPLOAD_DIR, workspace_id)
     os.makedirs(workspace_dir, exist_ok=True)
     
-    # Read file to compute hash and size
-    content = await file.read()
-    file_size = len(content)
-    file_hash = hashlib.sha256(content).hexdigest()
+    import uuid
+    # Stream file to compute hash and size without memory bloat
+    temp_file_path = os.path.join(workspace_dir, f"temp_{uuid.uuid4()}")
+    file_size = 0
+    sha256 = hashlib.sha256()
+    
+    with open(temp_file_path, "wb") as f:
+        while chunk := await file.read(8192):
+            f.write(chunk)
+            sha256.update(chunk)
+            file_size += len(chunk)
+            
+    file_hash = sha256.hexdigest()
     
     # Check for duplicates
     existing_doc = repo.get_by_hash(workspace_id, file_hash)
     if existing_doc:
+        os.remove(temp_file_path)
         raise HTTPException(status_code=409, detail="Duplicate file detected")
         
-    # Save file to disk
+    # Move temp file to final destination
     file_path = os.path.join(workspace_dir, file_hash)
-    with open(file_path, "wb") as f:
-        f.write(content)
+    os.rename(temp_file_path, file_path)
         
     # Save metadata to DB
     doc_create = DocumentCreate(
