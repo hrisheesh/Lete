@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type ProviderType = "local" | "openai" | "openrouter" | "anthropic";
 
@@ -17,17 +17,50 @@ export default function ProviderSettingsForm() {
 
   const showBaseUrl = providerType === "local" || providerType === "openrouter";
 
+  // Fetch initial settings
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch("http://localhost:8000/api/v1/settings");
+        if (res.ok) {
+          const data = await res.json();
+          setProviderType(data.provider_type as ProviderType);
+          if (data.base_url) setBaseUrl(data.base_url);
+          if (data.api_key) setApiKey(data.api_key);
+          if (data.model_name) setModelName(data.model_name);
+          if (data.embedding_model_name) setEmbeddingModelName(data.embedding_model_name);
+        }
+      } catch (e) {
+        console.error("Failed to load settings:", e);
+      }
+    }
+    loadSettings();
+  }, []);
+
   const handleTestConnection = async () => {
     setIsTesting(true);
     setNotification(null);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setNotification({
-        type: 'error',
-        message: 'Backend connection pending.'
+      const res = await fetch("http://localhost:8000/api/v1/settings/test-provider", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider_type: providerType,
+          base_url: showBaseUrl ? baseUrl : null,
+          api_key: apiKey,
+          model_name: modelName,
+          embedding_model_name: embeddingModelName
+        })
       });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setNotification({ type: 'success', message: 'Connection successful!' });
+      } else {
+        setNotification({ type: 'error', message: data.detail || 'Failed to connect.' });
+      }
     } catch (e) {
-      setNotification({ type: 'error', message: 'Failed to connect.' });
+      setNotification({ type: 'error', message: 'Network error occurred.' });
     } finally {
       setIsTesting(false);
     }
@@ -37,13 +70,26 @@ export default function ProviderSettingsForm() {
     setIsSaving(true);
     setNotification(null);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setNotification({
-        type: 'error',
-        message: 'Backend connection pending.'
+      const res = await fetch("http://localhost:8000/api/v1/settings/provider", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider_type: providerType,
+          base_url: showBaseUrl ? baseUrl : null,
+          api_key: apiKey,
+          model_name: modelName,
+          embedding_model_name: embeddingModelName
+        })
       });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setNotification({ type: 'success', message: 'Settings saved successfully.' });
+      } else {
+        setNotification({ type: 'error', message: data.detail || 'Failed to save.' });
+      }
     } catch (e) {
-      setNotification({ type: 'error', message: 'Failed to save.' });
+      setNotification({ type: 'error', message: 'Network error occurred.' });
     } finally {
       setIsSaving(false);
     }

@@ -19,3 +19,7 @@ app.include_router(health_router)
 app.include_router(
     workspaces_router, prefix=f"{settings.api_v1_str}/workspaces", tags=["workspaces"]
 )
+from lete.app.api.settings import router as settings_router
+app.include_router(
+    settings_router, prefix=f"{settings.api_v1_str}/settings", tags=["settings"]
+)
