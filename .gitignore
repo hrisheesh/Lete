@@ -1,2 +1,6 @@
 *.md
 !README.md
+AGENTS.md
+claude.md
+.gemini/
+.DS_Store
