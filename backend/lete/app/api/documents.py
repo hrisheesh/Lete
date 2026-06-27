@@ -146,6 +146,7 @@ def process_document(
         chunker = RecursiveChunker()
         chunk_index = 0
         
+        created_chunks = []
         for section in created_sections:
             raw_chunks = chunker.chunk(section.content)
             for rc in raw_chunks:
@@ -156,7 +157,7 @@ def process_document(
                     section_index=section.section_index
                 )
                 
-                chunk_repo.create(ChunkCreate(
+                chunk = chunk_repo.create(ChunkCreate(
                     document_id=document_id,
                     section_id=section.id,
                     text=rc,
@@ -164,8 +165,57 @@ def process_document(
                     chunk_index=chunk_index,
                     token_count=len(rc) // 4
                 ))
+                created_chunks.append(chunk)
                 chunk_index += 1
                 
+        # Phase 3: Embeddings
+        job = job_repo.update(job.id, ProcessingJobUpdate(status="embedding"))
+        
+        from lete.app.api.settings import get_settings
+        from lete.app.providers.embeddings import OpenAIEmbeddingProvider
+        from lete.app.repositories.embedding import EmbeddingRepository
+        import sqlite_vec
+        
+        prov_settings = get_settings(conn)
+        embed_provider = OpenAIEmbeddingProvider(
+            api_key=prov_settings.api_key or "",
+            model_name=prov_settings.embedding_model_name or "text-embedding-3-small",
+            base_url=prov_settings.base_url
+        )
+        embed_repo = EmbeddingRepository(conn)
+        
+        texts_to_embed = [c.contextual_header + "\n\n" + c.text if c.contextual_header else c.text for c in created_chunks]
+        
+        cached = embed_repo.get_cached_embeddings(texts_to_embed)
+        
+        missing_texts = []
+        for t in texts_to_embed:
+            t_hash = hashlib.sha256(t.encode('utf-8')).hexdigest()
+            if t_hash not in cached and t not in missing_texts:
+                missing_texts.append(t)
+                
+        if missing_texts:
+            new_embeddings = embed_provider.embed(missing_texts)
+            binary_text_to_embedding = {
+                txt: sqlite_vec.serialize_float32(emb) 
+                for txt, emb in zip(missing_texts, new_embeddings)
+            }
+            embed_repo.cache_embeddings(binary_text_to_embedding)
+            
+            for txt, binary_emb in binary_text_to_embedding.items():
+                t_hash = hashlib.sha256(txt.encode('utf-8')).hexdigest()
+                cached[t_hash] = binary_emb
+
+        embed_repo.delete_chunk_embeddings([c.id for c in created_chunks])
+        
+        chunk_id_to_embedding = {}
+        for c in created_chunks:
+            t = c.contextual_header + "\n\n" + c.text if c.contextual_header else c.text
+            t_hash = hashlib.sha256(t.encode('utf-8')).hexdigest()
+            chunk_id_to_embedding[c.id] = cached[t_hash]
+            
+        embed_repo.store_chunk_embeddings(chunk_id_to_embedding)
+        
         # Update Job Status to completed
         job = job_repo.update(job.id, ProcessingJobUpdate(status="completed"))
         return job
