@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from lete.app.api.health import router as health_router
+from lete.app.api.workspaces import router as workspaces_router
 from lete.app.config.settings import settings
 
 app = FastAPI(title=settings.project_name)
@@ -15,3 +16,6 @@ app.add_middleware(
 )
 
 app.include_router(health_router)
+app.include_router(
+    workspaces_router, prefix=f"{settings.api_v1_str}/workspaces", tags=["workspaces"]
+)
