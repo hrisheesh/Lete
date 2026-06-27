@@ -11,3 +11,8 @@ class EmbeddingProvider(ABC):
     def ping(self) -> bool:
         """Test the connection to the embedding provider."""
         pass
+        
+    @abstractmethod
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        """Generate embeddings for a list of texts."""
+        pass
