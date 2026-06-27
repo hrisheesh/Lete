@@ -103,6 +103,10 @@ from lete.app.schemas.section import DocumentSectionResponse
 from lete.app.repositories.job import ProcessingJobRepository
 from lete.app.repositories.section import DocumentSectionRepository
 from lete.app.parsing.registry import ParserRegistry
+from lete.app.schemas.chunk import ChunkCreate, ChunkResponse
+from lete.app.repositories.chunk import ChunkRepository
+from lete.app.chunking.recursive_chunker import RecursiveChunker
+from lete.app.chunking.context import generate_contextual_header
 
 @router.post("/documents/{document_id}/process", response_model=ProcessingJobResponse)
 def process_document(
@@ -233,11 +237,6 @@ def get_document_sections(
 ):
     section_repo = DocumentSectionRepository(conn)
     return section_repo.list_by_document(document_id)
-
-from lete.app.schemas.chunk import ChunkCreate, ChunkResponse
-from lete.app.repositories.chunk import ChunkRepository
-from lete.app.chunking.recursive_chunker import RecursiveChunker
-from lete.app.chunking.context import generate_contextual_header
 
 # The POST /chunk endpoint has been merged into POST /process
 
