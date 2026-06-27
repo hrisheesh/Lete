@@ -4,3 +4,12 @@ AGENTS.md
 claude.md
 .gemini/
 .DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.pytest_cache/
+.ruff_cache/
