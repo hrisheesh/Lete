@@ -11,9 +11,11 @@ interface Document {
 interface DocumentListProps {
   documents: Document[];
   onDelete: (id: string) => void;
+  onProcess: (id: string) => void;
+  onViewChunks: (id: string) => void;
 }
 
-export default function DocumentList({ documents, onDelete }: DocumentListProps) {
+export default function DocumentList({ documents, onDelete, onProcess, onViewChunks }: DocumentListProps) {
   if (documents.length === 0) {
     return null;
   }
@@ -49,7 +51,19 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
                   {doc.status}
                 </span>
               </td>
-              <td className="px-6 py-4 text-right">
+              <td className="px-6 py-4 text-right space-x-4">
+                <button
+                  onClick={() => onProcess(doc.id)}
+                  className="text-primary hover:text-primary/80 font-semibold text-sm transition-colors"
+                >
+                  Process
+                </button>
+                <button
+                  onClick={() => onViewChunks(doc.id)}
+                  className="text-ink hover:text-steel font-semibold text-sm transition-colors"
+                >
+                  View Chunks
+                </button>
                 <button
                   onClick={() => onDelete(doc.id)}
                   className="text-red-500 hover:text-red-700 font-semibold text-sm transition-colors"

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import FileUploadZone from "@/components/FileUploadZone";
 import DocumentList from "@/components/DocumentList";
+import ChunkPreviewModal from "@/components/ChunkPreviewModal";
 
 interface Workspace {
   id: string;
@@ -26,6 +27,8 @@ export default function WorkspaceDashboard() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedChunkDocId, setSelectedChunkDocId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
   const fetchWorkspace = async () => {
     try {
@@ -76,6 +79,40 @@ export default function WorkspaceDashboard() {
     }
   };
 
+  const handleProcessDocument = async (docId: string) => {
+    if (isProcessing) return;
+    setIsProcessing(docId);
+    try {
+      // Step 1: Process raw text
+      const processRes = await fetch(`http://127.0.0.1:8000/api/v1/documents/${docId}/process`, {
+        method: "POST"
+      });
+      
+      if (!processRes.ok) {
+        alert("Failed to extract text from document");
+        return;
+      }
+      
+      // Step 2: Chunk the extracted text
+      const chunkRes = await fetch(`http://127.0.0.1:8000/api/v1/documents/${docId}/chunk`, {
+        method: "POST"
+      });
+      
+      if (!chunkRes.ok) {
+        alert("Failed to chunk document text");
+        return;
+      }
+      
+      alert("Document successfully processed and chunked!");
+      fetchDocuments();
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred during processing");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
   if (loading) {
     return <div className="max-w-[1000px] mx-auto px-8 py-12 text-steel">Loading...</div>;
   }
@@ -83,7 +120,7 @@ export default function WorkspaceDashboard() {
   if (!workspace) return null;
 
   return (
-    <div className="max-w-[1000px] mx-auto px-8 py-12">
+    <div className="max-w-[1000px] mx-auto px-8 py-12 relative">
       <div className="flex items-center gap-4 mb-8">
         <Link href="/workspaces" className="text-steel hover:text-ink transition-colors">
           &larr; Back
@@ -104,11 +141,23 @@ export default function WorkspaceDashboard() {
           </div>
         ) : (
           <DocumentList 
-            documents={documents} 
+            documents={documents.map(d => ({
+              ...d, 
+              status: isProcessing === d.id ? 'Processing...' : d.status 
+            }))} 
             onDelete={handleDeleteDocument} 
+            onProcess={handleProcessDocument}
+            onViewChunks={setSelectedChunkDocId}
           />
         )}
       </div>
+
+      {selectedChunkDocId && (
+        <ChunkPreviewModal 
+          documentId={selectedChunkDocId} 
+          onClose={() => setSelectedChunkDocId(null)} 
+        />
+      )}
     </div>
   );
 }
