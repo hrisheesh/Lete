@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import Link from "next/link";
-import { Settings, Home } from "lucide-react";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -26,41 +21,48 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0f1115] text-gray-100 selection:bg-indigo-500/30`}>
-        <div className="min-h-screen flex flex-col relative overflow-hidden">
-          {/* Subtle Background Glow */}
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <body className={`${dmSans.variable} font-sans antialiased bg-canvas text-ink selection:bg-brand-blue/20`}>
+        <div className="min-h-screen flex flex-col">
+          {/* Top Navigation */}
+          <header className="bg-canvas border-b border-hairline-soft sticky top-0 z-50">
+            <div className="max-w-[1280px] mx-auto px-8 h-[64px] flex items-center justify-between">
+              {/* Left: Brand & Nav */}
+              <div className="flex items-center gap-8">
+                <Link href="/" className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold text-ink">Lete</h1>
+                </Link>
+                
+                <nav className="hidden md:flex items-center gap-6">
+                  <Link href="/" className="text-[14px] font-medium text-steel">
+                    Home
+                  </Link>
+                  <Link href="/settings" className="text-[14px] font-medium text-ink">
+                    Settings
+                  </Link>
+                </nav>
+              </div>
 
-          <header className="border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-50">
-            <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-300">
-                  <span className="font-bold text-white text-sm">L</span>
-                </div>
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400">Lete</h1>
-              </Link>
-              
-              <nav className="flex items-center gap-6 text-sm font-medium text-gray-400">
-                <Link href="/" className="flex items-center gap-2 hover:text-gray-100 transition-colors duration-200">
-                  <Home className="w-4 h-4" />
-                  <span>Home</span>
+              {/* Right: CTAs */}
+              <div className="flex items-center gap-4">
+                <Link 
+                  href="/settings"
+                  className="bg-primary text-on-primary text-[14px] font-semibold py-[11px] px-[24px] rounded-full"
+                >
+                  Configure
                 </Link>
-                <Link href="/settings" className="flex items-center gap-2 hover:text-white transition-colors duration-200">
-                  <div className="p-2 rounded-md hover:bg-white/10 transition-colors">
-                    <Settings className="w-5 h-5" />
-                  </div>
-                </Link>
-              </nav>
+              </div>
             </div>
           </header>
 
-          <main className="flex-1 max-w-6xl mx-auto w-full p-6 relative z-10">
+          <main className="flex-1 w-full pb-24">
             {children}
           </main>
 
-          <footer className="border-t border-white/10 text-center p-6 text-sm text-gray-500 bg-black/20 backdrop-blur-sm z-10">
-            Lete Architecture © {new Date().getFullYear()}
+          {/* Footer Region */}
+          <footer className="bg-primary text-on-primary px-8 py-[64px]">
+            <div className="max-w-[1280px] mx-auto text-[14px] text-gray-500">
+              Lete Adaptive Context Engine © {new Date().getFullYear()}
+            </div>
           </footer>
         </div>
       </body>

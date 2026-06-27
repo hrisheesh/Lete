@@ -6,7 +6,7 @@ describe('ProviderSettingsForm', () => {
   it('renders the form with default provider (OpenAI)', () => {
     render(<ProviderSettingsForm />);
     
-    expect(screen.getByText('Provider Configuration')).toBeInTheDocument();
+    expect(screen.getByText('AI Provider')).toBeInTheDocument();
     
     const select = screen.getByRole('combobox');
     expect(select).toHaveValue('openai');
@@ -20,7 +20,6 @@ describe('ProviderSettingsForm', () => {
     
     expect(select).toHaveValue('local');
     
-    // Check if the placeholder correctly reflects local host
     const baseUrlInput = screen.getByPlaceholderText('http://localhost:11434/v1');
     expect(baseUrlInput).toBeInTheDocument();
   });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Server, KeyRound, Box, Loader2, Link2, CheckCircle2 } from "lucide-react";
 
 type ProviderType = "local" | "openai" | "openrouter" | "anthropic";
 
@@ -22,10 +21,10 @@ export default function ProviderSettingsForm() {
     setIsTesting(true);
     setNotification(null);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 800));
       setNotification({
         type: 'error',
-        message: 'Backend is not connected yet (Phase 2 Backend pending). UI is fully wired.'
+        message: 'Backend connection pending.'
       });
     } catch (e) {
       setNotification({ type: 'error', message: 'Failed to connect.' });
@@ -38,10 +37,10 @@ export default function ProviderSettingsForm() {
     setIsSaving(true);
     setNotification(null);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
       setNotification({
         type: 'error',
-        message: 'Backend is not connected yet (Phase 2 Backend pending). Configuration was not saved.'
+        message: 'Backend connection pending.'
       });
     } catch (e) {
       setNotification({ type: 'error', message: 'Failed to save.' });
@@ -51,125 +50,111 @@ export default function ProviderSettingsForm() {
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
-      <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-6">
-        <div className="p-3 bg-indigo-500/10 rounded-xl">
-          <Server className="w-6 h-6 text-indigo-400" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-semibold text-white">Provider Configuration</h2>
-          <p className="text-gray-400 text-sm mt-1">Connect Lete to your preferred AI models.</p>
-        </div>
+    <div className="bg-canvas border border-hairline rounded-[16px] p-[24px]">
+      <div className="flex items-center justify-between mb-[32px]">
+        <h2 className="text-[24px] font-semibold text-ink leading-[1.30]">AI Provider</h2>
+        <span className="bg-brand-blue-200 text-brand-blue-deep text-[13px] font-semibold rounded-full px-[10px] py-[4px]">
+          BETA
+        </span>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-[24px]">
         {/* Provider Type */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300">Provider Type</label>
-          <div className="relative">
-            <select
-              value={providerType}
-              onChange={(e) => setProviderType(e.target.value as ProviderType)}
-              className="w-full bg-black/20 border border-white/10 rounded-lg py-3 px-4 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-            >
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-              <option value="openrouter">OpenRouter</option>
-              <option value="local">Local (Ollama / LM Studio)</option>
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-              ▼
-            </div>
-          </div>
+        <div className="space-y-[8px]">
+          <label className="block text-[14px] font-medium text-charcoal">Provider Type</label>
+          <select
+            value={providerType}
+            onChange={(e) => setProviderType(e.target.value as ProviderType)}
+            className="w-full bg-canvas text-ink text-[16px] h-[40px] px-[16px] border border-hairline rounded-[8px] focus:border-[2px] focus:border-brand-blue-deep focus:outline-none appearance-none"
+          >
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="local">Local (Ollama / LM Studio)</option>
+          </select>
         </div>
 
         {/* Base URL (Conditional) */}
-        <div className={`space-y-2 overflow-hidden transition-all duration-300 ${showBaseUrl ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
-          <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-            <Link2 className="w-4 h-4" /> Base URL
-          </label>
-          <input
-            type="url"
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder={providerType === 'local' ? 'http://localhost:11434/v1' : 'https://openrouter.ai/api/v1'}
-            className="w-full bg-black/20 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-          />
-        </div>
+        {showBaseUrl && (
+          <div className="space-y-[8px]">
+            <label className="block text-[14px] font-medium text-charcoal">Base URL</label>
+            <input
+              type="url"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder={providerType === 'local' ? 'http://localhost:11434/v1' : 'https://openrouter.ai/api/v1'}
+              className="w-full bg-canvas text-ink text-[16px] h-[40px] px-[16px] border border-hairline rounded-[8px] focus:border-[2px] focus:border-brand-blue-deep focus:outline-none"
+            />
+          </div>
+        )}
 
         {/* API Key */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-            <KeyRound className="w-4 h-4" /> API Key
-            {providerType === 'local' && <span className="text-gray-500 text-xs ml-2">(Optional for Local)</span>}
+        <div className="space-y-[8px]">
+          <label className="block text-[14px] font-medium text-charcoal">
+            API Key
+            {providerType === 'local' && <span className="text-steel ml-1 font-normal">(Optional for Local)</span>}
           </label>
           <input
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="sk-..."
-            className="w-full bg-black/20 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full bg-canvas text-ink text-[16px] h-[40px] px-[16px] border border-hairline rounded-[8px] focus:border-[2px] focus:border-brand-blue-deep focus:outline-none"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Model Name */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-              <Box className="w-4 h-4" /> Primary Model
-            </label>
+        {/* Model Names */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px]">
+          <div className="space-y-[8px]">
+            <label className="block text-[14px] font-medium text-charcoal">Primary Model</label>
             <input
               type="text"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
               placeholder="gpt-4o"
-              className="w-full bg-black/20 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+              className="w-full bg-canvas text-ink text-[16px] h-[40px] px-[16px] border border-hairline rounded-[8px] focus:border-[2px] focus:border-brand-blue-deep focus:outline-none"
             />
           </div>
 
-          {/* Embedding Model */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-              <Box className="w-4 h-4" /> Embedding Model
-            </label>
+          <div className="space-y-[8px]">
+            <label className="block text-[14px] font-medium text-charcoal">Embedding Model</label>
             <input
               type="text"
               value={embeddingModelName}
               onChange={(e) => setEmbeddingModelName(e.target.value)}
               placeholder="text-embedding-3-small"
-              className="w-full bg-black/20 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+              className="w-full bg-canvas text-ink text-[16px] h-[40px] px-[16px] border border-hairline rounded-[8px] focus:border-[2px] focus:border-brand-blue-deep focus:outline-none"
             />
           </div>
         </div>
 
         {/* Notifications */}
         {notification && (
-          <div className={`p-4 rounded-lg flex items-start gap-3 border ${notification.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
-            <div className="mt-0.5">
-              {notification.type === 'error' ? '⚠️' : <CheckCircle2 className="w-5 h-5" />}
-            </div>
-            <p className="text-sm">{notification.message}</p>
+          <div className={`mt-[24px] px-[16px] py-[12px] rounded-[8px] border text-[14px] font-medium ${
+            notification.type === 'error' 
+              ? 'bg-[#fff5f5] text-[#d45656] border-[#d45656]' 
+              : 'bg-success-bg text-success-text border-success-text'
+          }`}>
+            {notification.message}
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="pt-6 mt-6 border-t border-white/10 flex flex-col sm:flex-row items-center gap-4 justify-end">
+        {/* Actions */}
+        <div className="pt-[32px] mt-[32px] border-t border-hairline-soft flex flex-col sm:flex-row items-center gap-[16px] justify-end">
           <button
             onClick={handleTestConnection}
             disabled={isTesting || isSaving}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-[24px] py-[11px] bg-transparent text-ink border border-ink rounded-full text-[14px] font-semibold flex items-center justify-center min-w-[140px]"
           >
-            {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            Test Connection
+            {isTesting ? 'Testing...' : 'Test Connection'}
           </button>
           
           <button
             onClick={handleSaveSettings}
             disabled={isTesting || isSaving}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-medium text-white bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-400 hover:to-blue-500 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-[24px] py-[11px] bg-primary text-on-primary rounded-full text-[14px] font-semibold flex items-center justify-center min-w-[140px]"
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            Save Settings
+            {isSaving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
       </div>
