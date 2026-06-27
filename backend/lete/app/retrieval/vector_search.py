@@ -1,0 +1,67 @@
+import sqlite3
+import sqlite_vec
+from typing import List, Dict, Any
+
+class VectorSearchService:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def search(self, query_embedding: List[float], limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search for the closest chunks using the sqlite-vec virtual table.
+        Uses a two-step query to avoid SQLite query planner issues with virtual tables.
+        """
+        query_bytes = sqlite_vec.serialize_float32(query_embedding)
+        cursor = self.conn.cursor()
+        
+        # Step 1: Query the vector table
+        cursor.execute(
+            """
+            SELECT chunk_id, distance
+            FROM chunk_embeddings
+            WHERE embedding MATCH ? AND k = ?
+            ORDER BY distance
+            """,
+            (query_bytes, limit)
+        )
+        
+        vec_results = cursor.fetchall()
+        if not vec_results:
+            return []
+            
+        # Step 2: Fetch the full chunk data
+        chunk_ids = [row["chunk_id"] for row in vec_results]
+        distance_map = {row["chunk_id"]: row["distance"] for row in vec_results}
+        
+        placeholders = ",".join(["?"] * len(chunk_ids))
+        cursor.execute(
+            f"""
+            SELECT 
+                id as chunk_id,
+                document_id,
+                section_id,
+                text,
+                contextual_header,
+                chunk_index
+            FROM chunks
+            WHERE id IN ({placeholders})
+            """,
+            chunk_ids
+        )
+        
+        final_results = []
+        for row in cursor.fetchall():
+            chunk_id = row["chunk_id"]
+            final_results.append({
+                "chunk_id": chunk_id,
+                "document_id": row["document_id"],
+                "section_id": row["section_id"],
+                "text": row["text"],
+                "contextual_header": row["contextual_header"],
+                "chunk_index": row["chunk_index"],
+                "distance": distance_map[chunk_id]
+            })
+            
+        # Sort results back into distance order since WHERE IN doesn't guarantee order
+        final_results.sort(key=lambda x: x["distance"])
+        return final_results
