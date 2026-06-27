@@ -153,6 +153,34 @@ def bootstrap_db():
     """)
     conn.commit()
     
+    # Create retrieval_runs table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS retrieval_runs (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            query TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Create retrieval_results table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS retrieval_results (
+            id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            chunk_id TEXT NOT NULL,
+            rank INTEGER NOT NULL,
+            hybrid_score REAL NOT NULL,
+            vector_score REAL,
+            keyword_score REAL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES retrieval_runs(id) ON DELETE CASCADE,
+            FOREIGN KEY (chunk_id) REFERENCES chunks(id) ON DELETE CASCADE
+        )
+    """)
+    conn.commit()
+    
     # Create Indices for performance on foreign keys
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_workspace_id ON documents(workspace_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_document_id ON processing_jobs(document_id)")
