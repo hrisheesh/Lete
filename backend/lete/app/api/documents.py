@@ -109,16 +109,14 @@ from lete.app.chunking.recursive_chunker import RecursiveChunker
 from lete.app.chunking.context import generate_contextual_header
 
 from fastapi import BackgroundTasks
+from lete.app.db.session import get_connection
 
 def run_processing_pipeline(job_id: str, document_id: str):
     """
     Background worker for processing documents asynchronously.
     Creates a fresh database connection to avoid thread-safety issues.
     """
-    conn = sqlite3.connect("lete.db")
-    conn.enable_load_extension(True)
-    import sqlite_vec
-    sqlite_vec.load(conn)
+    conn = get_connection()
     conn.execute("PRAGMA foreign_keys = ON;")
     
     doc_repo = DocumentRepository(conn)
