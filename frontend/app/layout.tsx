@@ -3,6 +3,7 @@ import { DM_Sans } from "next/font/google";
 import Link from "next/link";
 import { Home, Layers3, Settings, Sparkles } from "lucide-react";
 import "./globals.css";
+import "katex/dist/katex.min.css";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",

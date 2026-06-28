@@ -175,7 +175,39 @@ stateDiagram-v2
     Rejected --> [*]
 \`\`\`
 
-## 3. LaTeX Math Rendering
+## 3. Code & Syntax Highlighting
+
+### Python Example
+\`\`\`python
+def calculate_fibonacci(n: int) -> list[int]:
+    """Calculate the first n Fibonacci numbers."""
+    if n <= 0: return []
+    if n == 1: return [0]
+    
+    sequence = [0, 1]
+    for _ in range(2, n):
+        sequence.append(sequence[-1] + sequence[-2])
+    return sequence
+
+print(f"Fib(10) = {calculate_fibonacci(10)}")
+\`\`\`
+
+### JSON Payload
+\`\`\`json
+{
+  "api_version": "v2",
+  "status": 200,
+  "data": {
+    "user": {
+      "id": "usr_98a7f",
+      "roles": ["admin", "developer"],
+      "isActive": true
+    }
+  }
+}
+\`\`\`
+
+## 4. LaTeX Math Rendering
 
 ### Display Math (Block)
 The Riemann zeta function is defined as:
@@ -186,18 +218,34 @@ $$
 ### Inline Math
 Einstein's famous equation $E = mc^2$ shows the equivalence of mass and energy, where $E$ is energy, $m$ is mass, and $c$ is the speed of light ($c \\approx 3 \\times 10^8 \\text{ m/s}$).
 
-## 4. Typography & Blockquotes
+## 5. GitHub Flavored Markdown (GFM)
+
+### Tables
+| Feature | Supported | Description |
+| :--- | :---: | :--- |
+| **Mermaid** | ✅ | Native rendering of diagrams and charts |
+| **KaTeX** | ✅ | Complex math equations |
+| **XSS Protection** | ✅ | Strict AST sanitization |
+| **Tables** | ✅ | Responsive data tables |
+
+### Task Lists
+- [x] Refactor Rich Text Engine
+- [x] Secure against XSS
+- [x] Fix React Hydration Issues
+- [ ] Implement Admonitions (Callouts)
+
+## 6. Typography & Blockquotes
 
 > **Design Philosophy**
 > 
 > "Good design is obvious. Great design is transparent."
 > — *Joe Sparano*
 
-This demonstrates how the rich text engine handles **bold text**, *italic text*, and \`inline code\` blocks wrapped seamlessly around inline citations like this one [1].
+This demonstrates how the rich text engine handles **bold text**, *italic text*, ~~strikethrough~~, and \`inline code\` blocks wrapped seamlessly around inline citations like this one [1].
 `);
 
   return (
-    <div className="flex min-h-screen bg-[#F9F9F9]">
+    <div className="flex h-screen overflow-hidden bg-[#F9F9F9]">
       <div className="flex w-1/2 flex-col border-r border-[#E5E5E5] bg-white">
         <div className="border-b border-[#E5E5E5] bg-[#FAFAFA] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#6B7280]">Markdown Input</h2>

@@ -6,7 +6,6 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-import "katex/dist/katex.min.css"; // Note: ensure this exists or is loaded in layout
 
 import dynamic from "next/dynamic";
 import RichCodeBlock from "./RichCodeBlock";
@@ -127,11 +126,10 @@ export default function RichMarkdown({
             ...defaultSchema,
             attributes: {
               ...defaultSchema.attributes,
-              // Allow class names on code elements so we can extract the language string
-              code: [
-                ...(defaultSchema.attributes?.code || []),
-                'className'
-              ]
+              // Allow class names on code, div, and span so Katex and other plugins can find their targets
+              code: [...(defaultSchema.attributes?.code || []), 'className'],
+              div: [...(defaultSchema.attributes?.div || []), 'className'],
+              span: [...(defaultSchema.attributes?.span || []), 'className'],
             }
           }],
           rehypeKatex
