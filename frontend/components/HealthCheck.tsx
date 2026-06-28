@@ -2,46 +2,52 @@
 
 import { useEffect, useState } from "react";
 
+type Status = "loading" | "connected" | "disconnected";
+
 export default function HealthCheck() {
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<Status>("loading");
 
   useEffect(() => {
-    const checkHealth = async () => {
+    let mounted = true;
+
+    async function checkHealth() {
       try {
-        const response = await fetch("http://localhost:8000/health", {
-          signal: AbortSignal.timeout(3000),
-        });
-        if (response.ok) {
-          setStatus("success");
-        } else {
-          setStatus("error");
-        }
-      } catch (error) {
-        setStatus("error");
+        const response = await fetch("http://127.0.0.1:8000/api/v1/health");
+        if (mounted) setStatus(response.ok ? "connected" : "disconnected");
+      } catch {
+        if (mounted) setStatus("disconnected");
       }
-    };
-    
+    }
+
     checkHealth();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
+  const copy = {
+    loading: "Connecting...",
+    connected: "Connected",
+    disconnected: "Disconnected",
+  }[status];
+
+  const statusClass = {
+    loading: "border-hairline bg-canvas text-steel",
+    connected: "border-success-text/20 bg-success-bg text-success-text",
+    disconnected: "border-brand-coral/25 bg-brand-coral/10 text-brand-coral",
+  }[status];
+
+  const dotClass = {
+    loading: "bg-stone",
+    connected: "bg-success-text",
+    disconnected: "bg-brand-coral",
+  }[status];
+
   return (
-    <div className="inline-block px-4 py-2 rounded-full border bg-white shadow-sm">
-      <div className="flex items-center space-x-2">
-        <span className="text-sm font-medium">Backend Status:</span>
-        {status === "loading" && <span className="text-sm text-gray-500">Connecting...</span>}
-        {status === "success" && (
-          <span className="flex items-center text-sm text-green-600">
-            <span className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-            Connected
-          </span>
-        )}
-        {status === "error" && (
-          <span className="flex items-center text-sm text-red-600">
-            <span className="w-2 h-2 rounded-full bg-red-500 mr-2" />
-            Disconnected
-          </span>
-        )}
-      </div>
+    <div className={`inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-bold ${statusClass}`}>
+      <span className={`size-2 rounded-full ${dotClass}`} />
+      {copy}
     </div>
   );
 }

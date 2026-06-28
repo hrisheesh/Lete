@@ -7,17 +7,18 @@ export const metadata: Metadata = {
 
 export default function SettingsPage() {
   return (
-    <div className="max-w-[1280px] mx-auto pt-[96px] px-8">
-      <div className="text-center mb-[80px]">
-        <h1 className="text-[80px] font-semibold leading-[1.10] tracking-[-2px] text-ink">
+    <div className="mx-auto max-w-[1280px] px-5 py-12 sm:px-8 sm:py-16">
+      <div className="mx-auto mb-10 max-w-3xl text-center">
+        <p className="text-sm font-bold uppercase tracking-wide text-stone">Settings</p>
+        <h1 className="mt-3 text-5xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl">
           Provider Configuration
         </h1>
-        <p className="text-[18px] font-medium leading-[1.50] text-steel mt-[16px]">
-          Connect Lete to your preferred AI models.
+        <p className="mx-auto mt-5 max-w-2xl text-lg font-medium leading-8 text-slate">
+          Connect Lete to the models that should power document answers and embeddings.
         </p>
       </div>
-      
-      <div className="max-w-[720px] mx-auto">
+
+      <div className="mx-auto max-w-[760px]">
         <ProviderSettingsForm />
       </div>
     </div>

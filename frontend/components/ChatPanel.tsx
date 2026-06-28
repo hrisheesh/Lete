@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Bot, Send, Square, UserRound } from "lucide-react";
 
 const API_BASE = "http://127.0.0.1:8000/api/v1";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface Citation {
-  id: string;           // e.g. "[1]"
+  id: string;
   chunk_id: string;
   document_id: string;
   filename: string;
@@ -28,7 +27,11 @@ interface ChatPanelProps {
   hasProcessedDocs: boolean;
 }
 
-// ─── Citation Tooltip ─────────────────────────────────────────────────────────
+type MarkdownBlock =
+  | { type: "heading"; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "code"; text: string }
+  | { type: "list"; ordered: boolean; items: string[] };
 
 function CitationBadge({ citation }: { citation: Citation }) {
   const [open, setOpen] = useState(false);
@@ -38,6 +41,7 @@ function CitationBadge({ citation }: { citation: Citation }) {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
+
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
@@ -45,96 +49,181 @@ function CitationBadge({ citation }: { citation: Citation }) {
   return (
     <span ref={ref} className="relative inline-block align-baseline">
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-ink text-on-primary text-[10px] font-bold cursor-pointer hover:bg-charcoal transition-colors mx-[2px] translate-y-[-2px]"
+        onClick={() => setOpen((value) => !value)}
+        className="mx-1 inline-flex size-5 translate-y-[-2px] items-center justify-center rounded-full bg-primary text-[10px] font-bold text-on-primary transition-[background-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal"
         title={`Source: ${citation.filename}`}
       >
         {citation.id.replace(/[\[\]]/g, "")}
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-ink text-on-primary rounded-2xl p-4 shadow-2xl z-50 text-left">
-          <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Source {citation.id}
-          </div>
-          <div className="text-[13px] font-semibold text-white mb-1 truncate">
-            {citation.filename}
-          </div>
+        <div className="absolute bottom-full left-1/2 z-50 mb-3 w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl bg-primary p-4 text-left text-on-primary shadow-2xl">
+          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-white/45">Source {citation.id}</div>
+          <div className="mb-1 truncate text-sm font-bold text-white">{citation.filename}</div>
           {citation.contextual_header && (
-            <div className="text-[11px] text-gray-400 mb-2 truncate">
-              {citation.contextual_header}
-            </div>
+            <div className="mb-2 truncate text-xs font-medium text-white/50">{citation.contextual_header}</div>
           )}
-          <div className="text-[12px] text-gray-300 leading-relaxed line-clamp-3">
-            {citation.text_preview}
-          </div>
-          {/* Arrow */}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-ink" />
+          <div className="line-clamp-3 text-xs font-medium leading-5 text-white/70">{citation.text_preview}</div>
+          <div className="absolute left-1/2 top-full size-3 -translate-x-1/2 rotate-45 bg-primary" />
         </div>
       )}
     </span>
   );
 }
 
-// ─── Render message content with inline citation badges ───────────────────────
+function renderInlineText(text: string, citations?: Citation[]) {
+  if (!citations || citations.length === 0) return text;
 
-function MessageContent({
-  content,
-  citations,
-}: {
-  content: string;
-  citations?: Citation[];
-}) {
-  if (!citations || citations.length === 0) {
-    return <span className="whitespace-pre-wrap">{content}</span>;
+  const citationMap = new Map(citations.map((citation) => [citation.id, citation]));
+  return text.split(/(\[\d+\])/g).map((part, index) => {
+    const citation = citationMap.get(part);
+    if (citation) return <CitationBadge key={`${part}-${index}`} citation={citation} />;
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
+
+function parseMarkdownBlocks(content: string): MarkdownBlock[] {
+  const blocks: MarkdownBlock[] = [];
+  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  let paragraph: string[] = [];
+  let listItems: string[] = [];
+  let orderedList = false;
+  let codeLines: string[] = [];
+  let inCode = false;
+
+  const flushParagraph = () => {
+    if (paragraph.length === 0) return;
+    blocks.push({ type: "paragraph", text: paragraph.join(" ").trim() });
+    paragraph = [];
+  };
+
+  const flushList = () => {
+    if (listItems.length === 0) return;
+    blocks.push({ type: "list", ordered: orderedList, items: listItems });
+    listItems = [];
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith("```")) {
+      if (inCode) {
+        blocks.push({ type: "code", text: codeLines.join("\n") });
+        codeLines = [];
+        inCode = false;
+      } else {
+        flushParagraph();
+        flushList();
+        inCode = true;
+      }
+      continue;
+    }
+
+    if (inCode) {
+      codeLines.push(line);
+      continue;
+    }
+
+    if (!trimmed) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const heading = trimmed.match(/^#{1,3}\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: "heading", text: heading[1] });
+      continue;
+    }
+
+    const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+    const numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
+    if (bullet || numbered) {
+      flushParagraph();
+      const nextOrdered = Boolean(numbered);
+      if (listItems.length > 0 && nextOrdered !== orderedList) flushList();
+      orderedList = nextOrdered;
+      listItems.push((bullet?.[1] ?? numbered?.[1] ?? "").trim());
+      continue;
+    }
+
+    flushList();
+    paragraph.push(trimmed);
   }
 
-  // Replace [N] markers with React nodes
-  const citationMap = new Map(citations.map((c) => [c.id, c]));
-  const parts = content.split(/(\[\d+\])/g);
+  if (inCode) blocks.push({ type: "code", text: codeLines.join("\n") });
+  flushParagraph();
+  flushList();
 
-  return (
-    <span className="whitespace-pre-wrap leading-relaxed">
-      {parts.map((part, i) => {
-        const citation = citationMap.get(part);
-        if (citation) {
-          return <CitationBadge key={i} citation={citation} />;
-        }
-        return <span key={i}>{part}</span>;
-      })}
-    </span>
-  );
+  return blocks;
 }
 
-// ─── Streaming cursor ─────────────────────────────────────────────────────────
+function MessageContent({ content, citations }: { content: string; citations?: Citation[] }) {
+  const blocks = parseMarkdownBlocks(content);
+
+  if (blocks.length === 0) return null;
+
+  return (
+    <div className="message-format">
+      {blocks.map((block, index) => {
+        if (block.type === "heading") {
+          return (
+            <h4 key={index} className="text-[15px] font-bold leading-6 text-ink">
+              {renderInlineText(block.text, citations)}
+            </h4>
+          );
+        }
+
+        if (block.type === "code") {
+          return (
+            <pre key={index} className="overflow-x-auto rounded-xl bg-primary px-4 py-3 text-xs leading-5 text-on-primary">
+              <code>{block.text}</code>
+            </pre>
+          );
+        }
+
+        if (block.type === "list") {
+          const ListTag = block.ordered ? "ol" : "ul";
+          return (
+            <ListTag key={index} className={block.ordered ? "list-decimal space-y-1 pl-5" : "list-disc space-y-1 pl-5"}>
+              {block.items.map((item, itemIndex) => (
+                <li key={itemIndex}>{renderInlineText(item, citations)}</li>
+              ))}
+            </ListTag>
+          );
+        }
+
+        return <p key={index}>{renderInlineText(block.text, citations)}</p>;
+      })}
+    </div>
+  );
+}
 
 function StreamingCursor() {
-  return (
-    <span className="inline-block w-[2px] h-[1em] bg-ink ml-[1px] translate-y-[2px] animate-[blink_1s_step-end_infinite]" />
-  );
+  return <span className="ml-1 inline-block h-[1em] w-[2px] translate-y-[2px] animate-[blink_1s_step-end_infinite] bg-ink" />;
 }
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState({ hasProcessedDocs }: { hasProcessedDocs: boolean }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-      <div className="w-16 h-16 rounded-3xl bg-surface border border-hairline-soft flex items-center justify-center mb-6">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-steel">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+    <div className="flex min-h-full flex-1 flex-col items-center justify-center px-5 py-12 text-center sm:px-6 sm:py-16">
+      <div className="flex size-14 items-center justify-center rounded-full bg-primary text-on-primary sm:size-16">
+        <Bot size={28} />
       </div>
-      <p className="text-[15px] font-semibold text-ink mb-2">Ask anything about your documents</p>
-      <p className="text-[13px] text-steel max-w-xs leading-relaxed">
+      <p className="mt-5 text-lg font-bold tracking-tight text-ink sm:mt-6">Ask anything about documents</p>
+      <p className="mt-2 max-w-sm text-sm font-medium leading-6 text-steel">
         {hasProcessedDocs
-          ? "Type a question below. Answers are grounded in your documents with inline citations."
+          ? "Type a question below. Answers stay grounded in your documents with inline citations."
           : "Upload and process at least one document to start asking questions."}
       </p>
     </div>
   );
 }
 
-// ─── Main ChatPanel ───────────────────────────────────────────────────────────
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong";
+}
 
 export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -152,12 +241,11 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Auto-resize textarea
   useEffect(() => {
-    const ta = inputRef.current;
-    if (!ta) return;
-    ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
+    const textarea = inputRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
   }, [input]);
 
   const sendMessage = useCallback(async () => {
@@ -166,20 +254,8 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
 
     setInput("");
     setIsLoading(true);
-
-    // Add user message
-    const userMsg: Message = { role: "user", content: query };
-    setMessages((prev) => [...prev, userMsg]);
-
-    // Add placeholder assistant message
-    const assistantMsg: Message = {
-      role: "assistant",
-      content: "",
-      citations: [],
-      isStreaming: true,
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
-
+    setMessages((prev) => [...prev, { role: "user", content: query }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: "", citations: [], isStreaming: true }]);
     abortControllerRef.current = new AbortController();
 
     try {
@@ -195,7 +271,9 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
         throw new Error(errText || `HTTP ${res.status}`);
       }
 
-      const reader = res.body!.getReader();
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
       const decoder = new TextDecoder();
       let buffer = "";
       let citations: Citation[] = [];
@@ -206,71 +284,72 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        buffer = lines.pop() ?? ""; // Keep incomplete line in buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("event: metadata")) continue;
-          if (line.startsWith("event: content")) continue;
-          if (line.startsWith("event: done")) continue;
+          if (!line.startsWith("data: ")) continue;
 
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6).trim();
-            if (!data || data === "{}") continue;
+          const data = line.slice(6);
+          if (data === "{}") continue;
 
-            try {
-              const parsed = JSON.parse(data);
+          try {
+            const parsed = JSON.parse(data);
 
-              if (parsed.citations !== undefined) {
-                // Metadata event
-                citations = parsed.citations as Citation[];
-                setMessages((prev) => {
-                  const next = [...prev];
-                  const last = { ...next[next.length - 1] };
-                  last.citations = citations;
-                  next[next.length - 1] = last;
-                  return next;
-                });
-              } else if (parsed.text !== undefined) {
-                // Content chunk
-                setMessages((prev) => {
-                  const next = [...prev];
-                  const last = { ...next[next.length - 1] };
-                  last.content += parsed.text;
-                  next[next.length - 1] = last;
-                  return next;
-                });
-              }
-            } catch {
-              // Non-JSON data line, skip
+            if (parsed.citations) {
+              citations = parsed.citations;
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = { ...next[next.length - 1], citations };
+                next[next.length - 1] = last;
+                return next;
+              });
             }
+
+            if (parsed.text) {
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = { ...next[next.length - 1] };
+                last.content += parsed.text;
+                next[next.length - 1] = last;
+                return next;
+              });
+            }
+          } catch {
+            continue;
           }
         }
       }
 
-      // Mark streaming done
       setMessages((prev) => {
         const next = [...prev];
-        const last = { ...next[next.length - 1] };
-        last.isStreaming = false;
+        const last = { ...next[next.length - 1], isStreaming: false };
         next[next.length - 1] = last;
         return next;
       });
-    } catch (err: any) {
-      if (err.name === "AbortError") return;
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
 
       setMessages((prev) => {
         const next = [...prev];
-        const last = { ...next[next.length - 1] };
-        last.isStreaming = false;
-        last.error = err.message || "An error occurred. Please try again.";
-        last.content = "";
+        const last = {
+          ...next[next.length - 1],
+          isStreaming: false,
+          error: getErrorMessage(error),
+          content: "I could not complete that answer.",
+        };
         next[next.length - 1] = last;
         return next;
       });
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
-  }, [input, isLoading, hasProcessedDocs, workspaceId]);
+  }, [hasProcessedDocs, input, isLoading, workspaceId]);
+
+  const stopGeneration = () => {
+    abortControllerRef.current?.abort();
+    setIsLoading(false);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -279,154 +358,96 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
     }
   };
 
-  const handleStop = () => {
-    abortControllerRef.current?.abort();
-    setIsLoading(false);
-    setMessages((prev) => {
-      const next = [...prev];
-      const last = { ...next[next.length - 1] };
-      last.isStreaming = false;
-      next[next.length - 1] = last;
-      return next;
-    });
-  };
-
-  const handleClear = () => {
-    if (isLoading) handleStop();
-    setMessages([]);
-  };
-
   return (
-    <div className="flex flex-col h-full border border-hairline-soft rounded-3xl overflow-hidden bg-canvas">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-hairline-soft bg-surface/50">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-ink" />
-          <span className="text-[14px] font-semibold text-ink">Chat</span>
+    <div className="flex min-h-[620px] overflow-hidden rounded-[28px] border border-hairline-soft bg-canvas shadow-[0_18px_60px_rgba(10,10,10,0.05)] lg:h-[calc(100vh-180px)] lg:min-h-[560px]">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-hairline-soft bg-surface px-4 py-4 sm:px-5">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wide text-stone">Workspace chat</p>
+            <h3 className="mt-1 truncate text-lg font-bold tracking-tight text-ink">Grounded answers</h3>
+          </div>
+          <span className="shrink-0 rounded-full bg-canvas px-3 py-1 text-xs font-bold text-steel">
+            {hasProcessedDocs ? "Ready" : "Needs documents"}
+          </span>
         </div>
-        {messages.length > 0 && (
-          <button
-            onClick={handleClear}
-            className="text-[12px] text-steel hover:text-ink transition-colors font-medium"
-          >
-            Clear
-          </button>
-        )}
-      </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
-        {messages.length === 0 ? (
-          <EmptyState hasProcessedDocs={hasProcessedDocs} />
-        ) : (
-          messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              {msg.role === "user" ? (
-                // User bubble
-                <div className="max-w-[80%] bg-ink text-on-primary rounded-3xl rounded-br-lg px-5 py-3 text-[14px] leading-relaxed">
-                  {msg.content}
-                </div>
-              ) : (
-                // Assistant bubble
-                <div className="max-w-[90%] space-y-3">
-                  {msg.error ? (
-                    <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-[13px] text-red-700">
-                      <span className="font-semibold">Error: </span>{msg.error}
-                    </div>
-                  ) : (
-                    <div className="text-[14px] text-ink leading-relaxed">
-                      {msg.content ? (
-                        <>
-                          <MessageContent content={msg.content} citations={msg.citations} />
-                          {msg.isStreaming && <StreamingCursor />}
-                        </>
-                      ) : msg.isStreaming ? (
-                        // Thinking dots
-                        <div className="flex items-center gap-1 py-2">
-                          <span className="w-2 h-2 rounded-full bg-steel animate-bounce [animation-delay:0ms]" />
-                          <span className="w-2 h-2 rounded-full bg-steel animate-bounce [animation-delay:150ms]" />
-                          <span className="w-2 h-2 rounded-full bg-steel animate-bounce [animation-delay:300ms]" />
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-
-                  {/* Citation source list */}
-                  {!msg.isStreaming && msg.citations && msg.citations.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {msg.citations.map((c) => (
-                        <div
-                          key={c.chunk_id}
-                          className="inline-flex items-center gap-1.5 bg-surface border border-hairline-soft rounded-full px-3 py-1"
-                        >
-                          <span className="w-4 h-4 rounded-full bg-ink text-on-primary text-[9px] font-bold flex items-center justify-center flex-shrink-0">
-                            {c.id.replace(/[\[\]]/g, "")}
-                          </span>
-                          <span className="text-[11px] text-steel truncate max-w-[140px]" title={c.filename}>
-                            {c.filename}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input area */}
-      <div className="border-t border-hairline-soft p-4">
-        <div className={`flex items-end gap-3 bg-surface rounded-2xl px-4 py-3 border transition-colors ${
-          hasProcessedDocs ? "border-hairline-soft focus-within:border-ink" : "border-hairline-soft opacity-60"
-        }`}>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              hasProcessedDocs
-                ? "Ask a question… (Enter to send, Shift+Enter for newline)"
-                : "Process at least one document to enable chat"
-            }
-            disabled={!hasProcessedDocs || isLoading}
-            rows={1}
-            className="flex-1 bg-transparent resize-none text-[14px] text-ink placeholder-steel outline-none disabled:cursor-not-allowed leading-relaxed max-h-[160px] overflow-y-auto"
-          />
-
-          {isLoading ? (
-            <button
-              onClick={handleStop}
-              className="flex-shrink-0 w-9 h-9 rounded-xl bg-ink text-on-primary flex items-center justify-center hover:bg-charcoal transition-colors"
-              title="Stop generating"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                <rect x="1" y="1" width="10" height="10" rx="2" />
-              </svg>
-            </button>
+        <div className="min-h-0 flex-1 overflow-y-auto bg-surface/35 px-3 py-4 sm:px-5 sm:py-6">
+          {messages.length === 0 ? (
+            <EmptyState hasProcessedDocs={hasProcessedDocs} />
           ) : (
-            <button
-              onClick={sendMessage}
-              disabled={!input.trim() || !hasProcessedDocs}
-              className="flex-shrink-0 w-9 h-9 rounded-xl bg-ink text-on-primary flex items-center justify-center hover:bg-charcoal transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Send (Enter)"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="19" x2="12" y2="5"/>
-                <polyline points="5,12 12,5 19,12"/>
-              </svg>
-            </button>
+            <div className="space-y-4 sm:space-y-5">
+              {messages.map((message, index) => {
+                const isUser = message.role === "user";
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex animate-[messageIn_220ms_ease-out] gap-2 sm:gap-3 ${
+                      isUser ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    {!isUser && (
+                      <span className="mt-1 hidden size-9 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary sm:flex">
+                        <Bot size={17} />
+                      </span>
+                    )}
+                    <div
+                      className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm font-medium leading-7 sm:max-w-[82%] md:max-w-[76%] ${
+                        isUser
+                          ? "bg-primary text-on-primary"
+                          : "border border-hairline-soft bg-canvas text-slate shadow-sm"
+                      }`}
+                    >
+                      <MessageContent content={message.content} citations={message.citations} />
+                      {message.isStreaming && <StreamingCursor />}
+                      {message.error && <div className="mt-2 text-xs font-bold text-brand-coral">{message.error}</div>}
+                    </div>
+                    {isUser && (
+                      <span className="mt-1 hidden size-9 shrink-0 items-center justify-center rounded-full bg-surface text-steel sm:flex">
+                        <UserRound size={17} />
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
           )}
         </div>
-        <p className="text-[11px] text-steel text-center mt-2">
-          Answers are grounded in your documents · Citations shown inline
-        </p>
+
+        <div className="shrink-0 border-t border-hairline-soft bg-canvas p-3 sm:p-4">
+          <div className="flex items-end gap-2 rounded-[22px] border border-hairline bg-surface p-2 transition-colors duration-200 ease-out focus-within:border-brand-blue-deep sm:gap-3">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={!hasProcessedDocs || isLoading}
+              placeholder={hasProcessedDocs ? "Ask about your documents..." : "Process a document to enable chat"}
+              rows={1}
+              className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-base font-medium leading-6 text-ink outline-none placeholder:text-stone disabled:cursor-not-allowed sm:text-sm"
+            />
+
+            {isLoading ? (
+              <button
+                onClick={stopGeneration}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition-[background-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal sm:size-10"
+                aria-label="Stop generation"
+              >
+                <Square size={16} />
+              </button>
+            ) : (
+              <button
+                onClick={sendMessage}
+                disabled={!input.trim() || !hasProcessedDocs}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition-[background-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:cursor-not-allowed disabled:bg-hairline disabled:text-muted disabled:hover:translate-y-0 sm:size-10"
+                aria-label="Send message"
+              >
+                <Send size={17} />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

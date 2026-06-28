@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
+import { UploadCloud } from "lucide-react";
 
 interface FileUploadZoneProps {
   workspaceId: string;
@@ -58,55 +59,39 @@ export default function FileUploadZone({ workspaceId, onUploadComplete }: FileUp
         } else {
           successCount++;
         }
-      } catch (err) {
+      } catch {
         setError("Network error occurred during upload.");
       }
     }
 
     setIsUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    if (successCount > 0) {
-      onUploadComplete();
-    }
+    if (successCount > 0) onUploadComplete();
   };
 
   return (
-    <div className="mb-8">
+    <div className="rounded-[28px] border border-hairline-soft bg-canvas p-3 shadow-[0_18px_60px_rgba(10,10,10,0.06)] sm:p-4">
       <div
-        className={`border-2 border-dashed rounded-3xl p-12 text-center transition-colors ${
-          isDragging
-            ? "border-primary bg-primary/5"
-            : "border-hairline-hard bg-surface"
-        }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-[22px] border border-dashed px-4 py-8 text-center transition-[background-color,border-color,transform] duration-200 ease-out hover:-translate-y-0.5 sm:px-6 sm:py-10 ${
+          isDragging ? "border-brand-blue bg-brand-blue/5" : "border-hairline bg-surface hover:border-ink"
+        }`}
       >
-        <p className="text-ink font-medium mb-4">
-          {isUploading ? "Uploading..." : "Drag and drop your documents here"}
+        <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+        <div className="flex size-12 items-center justify-center rounded-full bg-primary text-on-primary">
+          <UploadCloud size={22} />
+        </div>
+        <p className="mt-5 text-base font-bold tracking-tight text-ink">
+          {isUploading ? "Uploading..." : "Drop files here"}
         </p>
-        {!isUploading && (
-          <>
-            <p className="text-steel text-sm mb-6">Supports PDF, TXT, MD, DOCX</p>
-            <input
-              type="file"
-              multiple
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              id="file-upload"
-            />
-            <label
-              htmlFor="file-upload"
-              className="inline-block bg-white border border-hairline-soft text-ink font-semibold px-8 py-3 rounded-full cursor-pointer hover:border-hairline-hard transition-colors"
-            >
-              Browse Files
-            </label>
-          </>
-        )}
+        <p className="mt-2 max-w-52 text-sm font-medium leading-6 text-steel sm:max-w-none">or click to choose documents</p>
       </div>
+
       {error && (
-        <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm">
+        <div className="mt-4 rounded-xl border border-brand-coral/25 bg-brand-coral/10 px-4 py-3 text-sm font-semibold text-brand-coral">
           {error}
         </div>
       )}

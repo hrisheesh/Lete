@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
 interface Chunk {
   id: string;
@@ -19,54 +20,64 @@ export default function ChunkPreviewModal({ documentId, onClose }: ChunkPreviewM
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchChunks = async () => {
+    let mounted = true;
+
+    async function fetchChunks() {
       try {
         const res = await fetch(`http://127.0.0.1:8000/api/v1/documents/${documentId}/chunks`);
-        if (res.ok) {
-          setChunks(await res.json());
-        }
+        if (res.ok && mounted) setChunks(await res.json());
       } catch (e) {
         console.error(e);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
-    };
-    
+    }
+
     fetchChunks();
+
+    return () => {
+      mounted = false;
+    };
   }, [documentId]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
-        <div className="p-6 border-b border-hairline-soft flex justify-between items-center bg-surface rounded-t-3xl">
-          <h2 className="text-xl font-bold text-ink tracking-tight">Generated Chunks</h2>
-          <button 
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] bg-canvas shadow-2xl">
+        <div className="flex items-center justify-between border-b border-hairline-soft bg-surface px-6 py-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-stone">Document chunks</p>
+            <h2 className="mt-1 text-2xl font-bold tracking-tight text-ink">Generated Chunks</h2>
+          </div>
+          <button
             onClick={onClose}
-            className="text-steel hover:text-ink font-semibold transition-colors"
+            className="flex size-10 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition-colors hover:border-ink hover:text-ink"
+            aria-label="Close chunks"
           >
-            Close
+            <X size={18} />
           </button>
         </div>
-        
-        <div className="p-6 overflow-y-auto flex-1 bg-surface/30">
+
+        <div className="flex-1 overflow-y-auto bg-surface/40 p-6">
           {loading ? (
-            <div className="text-steel text-center py-12">Loading chunks...</div>
+            <div className="py-12 text-center text-sm font-semibold text-steel">Loading chunks...</div>
           ) : chunks.length === 0 ? (
-            <div className="text-steel text-center py-12">No chunks found. Have you processed this document yet?</div>
+            <div className="py-12 text-center text-sm font-semibold text-steel">
+              No chunks found. Have you processed this document yet?
+            </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {chunks.map((chunk) => (
-                <div key={chunk.id} className="bg-white border border-hairline-soft rounded-2xl p-6 shadow-sm">
-                  <div className="text-xs font-mono text-steel mb-4 bg-surface p-2 rounded-lg break-all">
-                    {chunk.contextual_header}
+                <article key={chunk.id} className="rounded-2xl border border-hairline-soft bg-canvas p-5">
+                  <div className="mb-3 flex items-center justify-between gap-4">
+                    <h3 className="truncate text-sm font-bold text-ink">
+                      {chunk.contextual_header || `Chunk ${chunk.chunk_index + 1}`}
+                    </h3>
+                    <span className="shrink-0 rounded-full bg-surface px-3 py-1 text-xs font-bold text-steel">
+                      #{chunk.chunk_index + 1}
+                    </span>
                   </div>
-                  <div className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
-                    {chunk.text}
-                  </div>
-                  <div className="mt-4 text-xs font-semibold text-steel/60 uppercase tracking-widest text-right">
-                    Chunk #{chunk.chunk_index}
-                  </div>
-                </div>
+                  <p className="whitespace-pre-wrap text-sm font-medium leading-7 text-slate">{chunk.text}</p>
+                </article>
               ))}
             </div>
           )}

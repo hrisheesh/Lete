@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, FileText, MessageSquare } from "lucide-react";
 import FileUploadZone from "@/components/FileUploadZone";
 import DocumentList from "@/components/DocumentList";
 import ChunkPreviewModal from "@/components/ChunkPreviewModal";
@@ -26,7 +27,7 @@ interface Document {
 type ActiveTab = "documents" | "chat";
 
 export default function WorkspaceDashboard() {
-  const { id } = useParams() as { id: string };
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -36,7 +37,8 @@ export default function WorkspaceDashboard() {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("documents");
 
-  const hasProcessedDocs = documents.some((d) => d.status === "processed");
+  const hasProcessedDocs = documents.some((document) => document.status === "processed");
+  const processingCount = documents.filter((document) => document.status === "processing").length;
 
   const fetchWorkspace = useCallback(async () => {
     try {
@@ -54,31 +56,29 @@ export default function WorkspaceDashboard() {
   const fetchDocuments = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/workspaces/${id}/documents`);
-      if (res.ok) {
-        setDocuments(await res.json());
-      }
-    } catch (e: any) {
-      if (e.name !== "TypeError" || e.message !== "Failed to fetch") {
-        console.error(e);
-      }
+      if (res.ok) setDocuments(await res.json());
+    } catch (e) {
+      console.error(e);
     }
   }, [id]);
 
-  // Initial load
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      await fetchWorkspace();
-      await fetchDocuments();
-      setLoading(false);
-    };
-    load();
-  }, [id, fetchWorkspace, fetchDocuments]);
+    let mounted = true;
 
-  // Poll while any doc is processing
+    async function loadWorkspace() {
+      await Promise.all([fetchWorkspace(), fetchDocuments()]);
+      if (mounted) setLoading(false);
+    }
+
+    loadWorkspace();
+
+    return () => {
+      mounted = false;
+    };
+  }, [fetchDocuments, fetchWorkspace]);
+
   useEffect(() => {
-    const hasProcessing = documents.some((d) => d.status === "processing");
-    if (!hasProcessing) return;
+    if (!documents.some((document) => document.status === "processing")) return;
     const interval = setInterval(fetchDocuments, 2000);
     return () => clearInterval(interval);
   }, [documents, fetchDocuments]);
@@ -100,7 +100,7 @@ export default function WorkspaceDashboard() {
       fetchDocuments();
     } catch (e) {
       console.error(e);
-      alert("An error occurred starting the process");
+      alert("An error occurred starting process");
     } finally {
       setIsProcessing(null);
     }
@@ -108,8 +108,8 @@ export default function WorkspaceDashboard() {
 
   if (loading) {
     return (
-      <div className="max-w-[1280px] mx-auto px-8 py-12 text-steel text-[14px]">
-        Loading…
+      <div className="mx-auto max-w-[1280px] px-5 py-12 text-sm font-semibold text-steel sm:px-8">
+        Loading workspace...
       </div>
     );
   }
@@ -117,67 +117,88 @@ export default function WorkspaceDashboard() {
   if (!workspace) return null;
 
   return (
-    <div className="max-w-[1280px] mx-auto px-8 py-10">
-      {/* ── Header ── */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link
-          href="/workspaces"
-          className="text-steel hover:text-ink transition-colors text-[13px] font-medium"
-        >
-          ← Back
-        </Link>
-        <h2 className="text-2xl font-bold text-ink tracking-tight">{workspace.name}</h2>
+    <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+      <div className="mb-6 flex flex-col gap-5 lg:mb-7 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <Link
+            href="/workspaces"
+            className="inline-flex items-center gap-2 rounded-full border border-hairline bg-canvas px-4 py-2 text-sm font-bold text-steel transition-colors hover:border-ink hover:text-ink"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </Link>
+          <h1 className="mt-5 break-words text-3xl font-bold leading-tight tracking-tight text-ink sm:text-5xl">{workspace.name}</h1>
+          <p className="mt-3 text-sm font-semibold text-steel">
+            {documents.length} documents · {processingCount} processing
+          </p>
+        </div>
+
+        <div className="grid w-full grid-cols-2 rounded-full border border-hairline bg-canvas p-1 shadow-sm sm:inline-flex sm:w-auto">
+          <button
+            onClick={() => setActiveTab("documents")}
+            className={`inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition-[background-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 ${
+              activeTab === "documents" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
+            }`}
+          >
+            <FileText size={16} />
+            Documents
+          </button>
+          <button
+            onClick={() => setActiveTab("chat")}
+            className={`inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition-[background-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 ${
+              activeTab === "chat" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
+            }`}
+          >
+            <MessageSquare size={16} />
+            Chat
+          </button>
+        </div>
       </div>
 
-      {/* ── Two-column layout ── */}
-      <div className="flex gap-8 items-start">
-        {/* ── LEFT: Documents panel ── */}
-        <div className="w-[420px] flex-shrink-0 space-y-6">
-          <FileUploadZone
-            workspaceId={workspace.id}
-            onUploadComplete={fetchDocuments}
-          />
-
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[15px] font-bold text-ink">Documents</h3>
-              <span className="text-[12px] text-steel">{documents.length} file{documents.length !== 1 ? "s" : ""}</span>
+      {activeTab === "documents" ? (
+        <div className="grid gap-5 xl:grid-cols-[minmax(300px,380px)_1fr] xl:items-start">
+          <aside className="space-y-5">
+            <FileUploadZone workspaceId={workspace.id} onUploadComplete={fetchDocuments} />
+            <div className="rounded-[28px] border border-hairline-soft bg-canvas p-6">
+              <p className="text-sm font-bold uppercase tracking-wide text-stone">Readiness</p>
+              <div className="mt-5 space-y-3">
+                <div className="flex items-center justify-between text-sm font-semibold">
+                  <span className="text-steel">Processed</span>
+                  <span className="text-ink">
+                    {documents.filter((document) => document.status === "processed").length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-semibold">
+                  <span className="text-steel">Pending</span>
+                  <span className="text-ink">
+                    {documents.filter((document) => document.status !== "processed").length}
+                  </span>
+                </div>
+              </div>
             </div>
+          </aside>
 
+          <section>
             {documents.length === 0 ? (
-              <div className="text-steel bg-surface border border-hairline-soft rounded-2xl p-6 text-center text-[13px]">
-                No documents uploaded yet.
+              <div className="rounded-[28px] border border-dashed border-hairline bg-surface p-12 text-center">
+                <p className="text-lg font-bold text-ink">No documents yet</p>
+                <p className="mt-2 text-sm font-medium text-steel">Upload files to build this workspace context.</p>
               </div>
             ) : (
               <DocumentList
-                documents={documents.map((d) => ({
-                  ...d,
-                  status: isProcessing === d.id ? "processing" : d.status,
-                }))}
+                documents={documents}
                 onDelete={handleDeleteDocument}
                 onProcess={handleProcessDocument}
                 onViewChunks={setSelectedChunkDocId}
               />
             )}
-          </div>
+          </section>
         </div>
-
-        {/* ── RIGHT: Chat panel ── */}
-        <div className="flex-1 min-w-0" style={{ height: "calc(100vh - 220px)", minHeight: "560px" }}>
-          <ChatPanel
-            workspaceId={workspace.id}
-            hasProcessedDocs={hasProcessedDocs}
-          />
-        </div>
-      </div>
-
-      {/* ── Chunk Preview Modal ── */}
-      {selectedChunkDocId && (
-        <ChunkPreviewModal
-          documentId={selectedChunkDocId}
-          onClose={() => setSelectedChunkDocId(null)}
-        />
+      ) : (
+        <ChatPanel workspaceId={workspace.id} hasProcessedDocs={hasProcessedDocs} />
       )}
+
+      {selectedChunkDocId && <ChunkPreviewModal documentId={selectedChunkDocId} onClose={() => setSelectedChunkDocId(null)} />}
     </div>
   );
 }

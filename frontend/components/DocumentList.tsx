@@ -1,5 +1,7 @@
 "use client";
 
+import { Eye, FileText, Play, Trash2 } from "lucide-react";
+
 interface Document {
   id: string;
   filename: string;
@@ -21,69 +23,83 @@ export default function DocumentList({ documents, onDelete, onProcess, onViewChu
   }
 
   const formatSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const statusClass = (status: string) => {
+    if (status === "processed") return "bg-success-bg text-success-text";
+    if (status === "processing") return "bg-brand-blue/10 text-brand-blue-deep";
+    if (status === "failed") return "bg-brand-coral/10 text-brand-coral";
+    return "bg-surface text-steel";
   };
 
   return (
-    <div className="bg-white border border-hairline-soft rounded-3xl overflow-hidden">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-hairline-soft bg-surface">
-            <th className="px-6 py-4 text-xs font-semibold text-steel uppercase tracking-wider">Name</th>
-            <th className="px-6 py-4 text-xs font-semibold text-steel uppercase tracking-wider">Size</th>
-            <th className="px-6 py-4 text-xs font-semibold text-steel uppercase tracking-wider">Status</th>
-            <th className="px-6 py-4 text-xs font-semibold text-steel uppercase tracking-wider text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-hairline-soft">
-          {documents.map((doc) => (
-            <tr key={doc.id} className="hover:bg-surface/50 transition-colors">
-              <td className="px-6 py-4 text-sm font-medium text-ink">
-                {doc.filename}
-              </td>
-              <td className="px-6 py-4 text-sm text-steel">
+    <div className="overflow-hidden rounded-[28px] border border-hairline-soft bg-canvas shadow-[0_18px_60px_rgba(10,10,10,0.05)]">
+      <div className="hidden grid-cols-[1fr_96px_112px_auto] gap-3 border-b border-hairline-soft bg-surface px-5 py-4 text-xs font-bold uppercase tracking-wide text-stone md:grid">
+        <span>Name</span>
+        <span>Size</span>
+        <span>Status</span>
+        <span className="text-right">Actions</span>
+      </div>
+      <div className="divide-y divide-hairline-soft">
+        {documents.map((doc) => (
+          <div key={doc.id} className="grid gap-4 px-4 py-4 md:grid-cols-[1fr_96px_112px_auto] md:items-center md:px-5">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-steel">
+                <FileText size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="break-words text-sm font-bold text-ink md:truncate">{doc.filename}</p>
+                <p className="mt-1 text-xs font-medium text-stone">{new Date(doc.created_at).toLocaleDateString()}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 md:block">
+              <span className="rounded-full bg-surface px-3 py-1 text-xs font-bold text-steel md:bg-transparent md:px-0 md:py-0">
                 {formatSize(doc.file_size)}
-              </td>
-              <td className="px-6 py-4 text-sm">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold capitalize ${
-                  doc.status === 'processed' ? 'bg-green-100 text-green-700' :
-                  doc.status === 'failed' ? 'bg-red-100 text-red-700' :
-                  doc.status === 'processing' ? 'bg-blue-100 text-blue-700 animate-pulse' :
-                  'bg-surface-hover text-steel'
-                }`}>
-                  {doc.status === 'processing' && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
-                  )}
-                  {doc.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 text-right space-x-4">
+              </span>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize md:hidden ${statusClass(doc.status)}`}>
+                {doc.status}
+              </span>
+            </div>
+
+            <span className={`hidden rounded-full px-3 py-1 text-center text-xs font-bold capitalize md:inline-flex ${statusClass(doc.status)}`}>
+              {doc.status}
+            </span>
+
+            <div className="grid grid-cols-3 gap-2 md:flex md:justify-end">
+              <button
+                onClick={() => onViewChunks(doc.id)}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition-[border-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-ink hover:text-ink md:size-10"
+                aria-label="View chunks"
+                title="View chunks"
+              >
+                <Eye size={16} />
+              </button>
+              {doc.status !== "processed" && doc.status !== "processing" && (
                 <button
                   onClick={() => onProcess(doc.id)}
-                  disabled={doc.status === 'processing'}
-                  className="text-primary hover:text-primary/80 font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex h-10 items-center justify-center rounded-full bg-primary text-on-primary transition-[background-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal md:size-10"
+                  aria-label="Process document"
+                  title="Process document"
                 >
-                  {doc.status === 'processing' ? 'Processing...' : 'Process'}
+                  <Play size={16} />
                 </button>
-                <button
-                  onClick={() => onViewChunks(doc.id)}
-                  className="text-ink hover:text-steel font-semibold text-sm transition-colors"
-                >
-                  View Chunks
-                </button>
-                <button
-                  onClick={() => onDelete(doc.id)}
-                  className="text-red-500 hover:text-red-700 font-semibold text-sm transition-colors"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              )}
+              <button
+                onClick={() => onDelete(doc.id)}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-hairline bg-canvas text-brand-coral transition-[border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-brand-coral md:size-10"
+                aria-label="Delete document"
+                title="Delete document"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
