@@ -31,7 +31,6 @@ interface ChatPanelProps {
 
 
 import RichMarkdown from "./markdown/RichMarkdown";
-import { Citation } from "@/types/api";
 
 function FormattedMessage({ content, citations }: { content: string; citations?: Citation[] }) {
   return <RichMarkdown content={content} citations={citations} />;

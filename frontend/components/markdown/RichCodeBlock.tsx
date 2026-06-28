@@ -67,8 +67,9 @@ export default function RichCodeBlock({
             backgroundColor: "transparent",
             fontSize: "13.5px",
             lineHeight: "1.6",
+            overflowX: "auto"
           }}
-          wrapLines={true}
+          wrapLines={false}
           showLineNumbers={true}
           lineNumberStyle={{
             minWidth: "2.5em",

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useId } from "react";
+import JSON5 from "json5";
 import {
   BarChart,
   Bar,
@@ -60,9 +61,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function RichChart({ configStr }: { configStr: string }) {
+  const chartId = useId();
+  
   const config = useMemo<ChartConfig | null>(() => {
     try {
-      return JSON.parse(configStr);
+      // Strip any stray backticks the LLM might have injected inside the block
+      let cleanStr = configStr.replace(/^`+|`+$/g, "").trim();
+      return JSON5.parse(cleanStr);
     } catch (e) {
       return null;
     }
@@ -99,7 +104,7 @@ export default function RichChart({ configStr }: { configStr: string }) {
             <BarChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 {keys.map((key, i) => (
-                  <linearGradient key={`color-${key}`} id={`color-${key}`} x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient key={`color-${key}-${chartId}`} id={`color-${key}-${chartId}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={colors[i % colors.length]} stopOpacity={1} />
                     <stop offset="95%" stopColor={colors[i % colors.length]} stopOpacity={0.6} />
                   </linearGradient>
@@ -114,7 +119,7 @@ export default function RichChart({ configStr }: { configStr: string }) {
                 <Bar
                   key={key}
                   dataKey={key}
-                  fill={`url(#color-${key})`}
+                  fill={`url(#color-${key}-${chartId})`}
                   radius={[6, 6, 0, 0]}
                   animationDuration={1500}
                   animationEasing="ease-out"
@@ -156,7 +161,7 @@ export default function RichChart({ configStr }: { configStr: string }) {
             <AreaChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 {keys.map((key, i) => (
-                  <linearGradient key={`colorArea-${key}`} id={`colorArea-${key}`} x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient key={`colorArea-${key}-${chartId}`} id={`colorArea-${key}-${chartId}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={colors[i % colors.length]} stopOpacity={0.8} />
                     <stop offset="95%" stopColor={colors[i % colors.length]} stopOpacity={0} />
                   </linearGradient>
@@ -174,7 +179,7 @@ export default function RichChart({ configStr }: { configStr: string }) {
                   dataKey={key}
                   stroke={colors[i % colors.length]}
                   fillOpacity={1}
-                  fill={`url(#colorArea-${key})`}
+                  fill={`url(#colorArea-${key}-${chartId})`}
                   strokeWidth={3}
                   animationDuration={2000}
                   animationEasing="ease-out"
@@ -216,7 +221,7 @@ export default function RichChart({ configStr }: { configStr: string }) {
             <ComposedChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 {(bars || []).map((key, i) => (
-                  <linearGradient key={`colorBar-${key}`} id={`colorBar-${key}`} x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient key={`colorBar-${key}-${chartId}`} id={`colorBar-${key}-${chartId}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={colors[i % colors.length]} stopOpacity={1} />
                     <stop offset="95%" stopColor={colors[i % colors.length]} stopOpacity={0.6} />
                   </linearGradient>
@@ -231,7 +236,7 @@ export default function RichChart({ configStr }: { configStr: string }) {
                 <Area key={key} type="monotone" dataKey={key} fill="#f3f4f6" stroke="none" />
               ))}
               {(bars || []).map((key, i) => (
-                <Bar key={key} dataKey={key} fill={`url(#colorBar-${key})`} radius={[4, 4, 0, 0]} barSize={20} animationDuration={1500} />
+                <Bar key={key} dataKey={key} fill={`url(#colorBar-${key}-${chartId})`} radius={[4, 4, 0, 0]} barSize={20} animationDuration={1500} />
               ))}
               {(lines || []).map((key, i) => (
                 <Line key={key} type="monotone" dataKey={key} stroke={colors[(i + (bars?.length || 0)) % colors.length]} strokeWidth={3} dot={false} animationDuration={2000} />

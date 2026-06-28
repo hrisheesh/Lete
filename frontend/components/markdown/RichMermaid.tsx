@@ -9,7 +9,11 @@ export default function RichMermaid({ chart }: { chart: string }) {
   const [error, setError] = useState<string>("");
   const [isRendering, setIsRendering] = useState<boolean>(true);
   const renderHostRef = useRef<HTMLDivElement>(null);
-  const [generatedId] = useState(() => `sota-mermaid-${Math.random().toString(36).substring(2, 9)}`);
+  
+  // Use React's useId to ensure deterministic SSR/Client IDs without hydration bugs
+  // Remove any colons from the ID to keep Mermaid parser happy
+  const reactId = React.useId().replace(/:/g, "");
+  const generatedId = `sota-mermaid-${reactId}`;
 
   useEffect(() => {
     let mounted = true;
@@ -37,8 +41,11 @@ export default function RichMermaid({ chart }: { chart: string }) {
     const renderHost = renderHostRef.current;
 
     try {
+      // Clean up the text, removing any backticks LLM might have outputted
+      const cleanChart = chart.replace(/^`+|`+$/g, "").trim();
+
       mermaid
-        .render(generatedId, chart, renderHost ?? undefined)
+        .render(generatedId, cleanChart, renderHost ?? undefined)
         .then(({ svg: renderedSvg }) => {
           if (mounted) {
             setSvg(renderedSvg);

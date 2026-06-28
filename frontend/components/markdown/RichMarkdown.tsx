@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import "katex/dist/katex.min.css"; // Note: ensure this exists or is loaded in layout
 
 import dynamic from "next/dynamic";
@@ -13,7 +14,14 @@ import RichChart from "./RichChart";
 
 const RichMermaid = dynamic(() => import("./RichMermaid"), { ssr: false });
 
-import { Citation } from "@/types/api";
+export interface Citation {
+  id: string;
+  chunk_id: string;
+  document_id: string;
+  filename: string;
+  contextual_header?: string;
+  text_preview: string;
+}
 
 function CitationBadge({ citation }: { citation: Citation }) {
   const [open, setOpen] = React.useState(false);
@@ -114,7 +122,20 @@ export default function RichMarkdown({
     <div className="chat-markdown text-[15px] font-medium leading-7 text-charcoal">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[
+          [rehypeSanitize, {
+            ...defaultSchema,
+            attributes: {
+              ...defaultSchema.attributes,
+              // Allow class names on code elements so we can extract the language string
+              code: [
+                ...(defaultSchema.attributes?.code || []),
+                'className'
+              ]
+            }
+          }],
+          rehypeKatex
+        ]}
         components={{
           // Typography
           h1: ({ children }) => (
