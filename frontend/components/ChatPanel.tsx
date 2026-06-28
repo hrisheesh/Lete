@@ -325,11 +325,11 @@ function StreamingCursor() {
 
 function EmptyState({ hasProcessedDocs }: { hasProcessedDocs: boolean }) {
   return (
-    <div className="flex min-h-full flex-1 flex-col items-center justify-center px-5 py-12 text-center sm:px-6 sm:py-16">
-      <div className="flex size-16 items-center justify-center rounded-full bg-primary text-on-primary shadow-[0_16px_40px_rgba(17,17,17,0.18)]">
-        <Bot size={29} />
+    <div className="flex min-h-full flex-1 flex-col items-center justify-center px-5 py-8 text-center sm:px-6">
+      <div className="flex size-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-[0_16px_40px_rgba(17,17,17,0.16)]">
+        <Bot size={25} />
       </div>
-      <p className="mt-6 text-xl font-bold tracking-tight text-ink">Ask anything about documents</p>
+      <p className="mt-5 text-lg font-bold tracking-tight text-ink">Ask anything about documents</p>
       <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-steel">
         {hasProcessedDocs
           ? "Type a question below. Answers stay grounded in your documents with inline citations."
@@ -511,18 +511,18 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
   };
 
   return (
-    <div className="premium-panel flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.25rem]">
-      <div className="flex shrink-0 items-center justify-between border-b border-hairline-soft bg-white/70 px-4 py-2.5 sm:px-5">
+    <div className="premium-panel flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.1rem]">
+      <div className="flex shrink-0 items-center justify-between border-b border-hairline-soft bg-white/78 px-3.5 py-2 sm:px-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-stone">Grounded chat</p>
-          <h2 className="mt-0.5 text-lg font-bold tracking-tight text-ink">Ask your workspace</h2>
+          <h2 className="mt-0.5 text-base font-bold tracking-tight text-ink sm:text-lg">Ask your workspace</h2>
         </div>
-        <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-on-primary">
+        <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-on-primary">
           {hasProcessedDocs ? "Ready" : "Needs docs"}
         </span>
       </div>
 
-      <div className="internal-scroll min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-5">
+      <div className="internal-scroll min-h-0 flex-1 overflow-y-auto px-2.5 py-3 sm:px-4">
         {messages.length === 0 ? (
           <EmptyState hasProcessedDocs={hasProcessedDocs} />
         ) : (
@@ -531,18 +531,18 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
               const isUser = message.role === "user";
 
               return (
-                <div key={index} className={`animate-message-in flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
-                  {!isUser && (
-                    <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary">
-                      <Bot size={18} />
-                    </div>
-                  )}
+              <div key={index} className={`animate-message-in flex gap-2.5 ${isUser ? "justify-end" : "justify-start"}`}>
+                {!isUser && (
+                  <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary">
+                    <Bot size={16} />
+                  </div>
+                )}
 
-                    <div
-                      className={`max-w-[min(68rem,calc(100%-3rem))] overflow-hidden rounded-[1.35rem] px-4 py-3 sm:px-5 sm:py-4 ${
-                      isUser
-                        ? "bg-primary text-on-primary shadow-[0_16px_42px_rgba(17,17,17,0.16)]"
-                        : "border border-hairline-soft bg-canvas text-slate shadow-[0_14px_44px_rgba(17,17,17,0.05)]"
+                <div
+                  className={`max-w-[min(72rem,calc(100%-2.5rem))] overflow-hidden rounded-[1.15rem] px-3.5 py-3 sm:px-4 sm:py-3.5 ${
+                    isUser
+                      ? "bg-primary text-on-primary shadow-[0_16px_42px_rgba(17,17,17,0.16)]"
+                      : "border border-hairline-soft bg-canvas text-slate shadow-[0_14px_44px_rgba(17,17,17,0.05)]"
                     }`}
                   >
                     {isUser ? (
@@ -568,10 +568,10 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
                   </div>
 
                   {isUser && (
-                    <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-surface text-ink">
-                      <UserRound size={17} />
-                    </div>
-                  )}
+                  <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-surface text-ink">
+                    <UserRound size={15} />
+                  </div>
+                )}
                 </div>
               );
             })}
@@ -580,9 +580,9 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
         )}
       </div>
 
-      <div className="shrink-0 border-t border-hairline-soft bg-white/80 p-3 sm:p-4">
+      <div className="shrink-0 border-t border-hairline-soft bg-white/82 p-2.5 sm:p-3">
         <div
-          className={`flex items-end gap-3 rounded-[1.25rem] border bg-surface px-3 py-3 transition duration-200 ${
+          className={`flex items-end gap-2.5 rounded-[1rem] border bg-surface px-3 py-2.5 transition duration-200 ${
             hasProcessedDocs ? "border-hairline-soft focus-within:border-ink" : "border-hairline-soft opacity-60"
           }`}
         >
@@ -594,14 +594,14 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
             placeholder={hasProcessedDocs ? "Ask question..." : "Process at least one document to enable chat"}
             disabled={!hasProcessedDocs || isLoading}
             rows={1}
-            className="max-h-40 min-h-9 flex-1 resize-none overflow-y-auto bg-transparent py-2 text-sm font-semibold leading-6 text-ink outline-none placeholder:text-steel disabled:cursor-not-allowed"
-          />
+          className="max-h-36 min-h-8 flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-sm font-semibold leading-6 text-ink outline-none placeholder:text-steel disabled:cursor-not-allowed"
+        />
 
           {isLoading ? (
             <button
               type="button"
               onClick={stopStreaming}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal"
               title="Stop generating"
             >
               <Square size={15} fill="currentColor" />
@@ -611,7 +611,7 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
               type="button"
               onClick={sendMessage}
               disabled={!input.trim() || !hasProcessedDocs}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:opacity-30"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:opacity-30"
               title="Send"
             >
               <Send size={17} />

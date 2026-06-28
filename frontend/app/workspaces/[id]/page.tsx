@@ -101,28 +101,28 @@ export default function WorkspaceDashboard() {
 
   return (
     <main className="app-screen">
-      <section className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-2">
-        <div className="premium-panel flex shrink-0 flex-col gap-2 rounded-[1.25rem] p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3">
+      <section className="mx-auto flex h-full min-h-0 w-full max-w-[1680px] flex-col gap-2">
+        <div className="premium-panel flex shrink-0 flex-col gap-2 rounded-[1.05rem] p-2 sm:flex-row sm:items-center sm:justify-between sm:px-2.5">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/workspaces"
-              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
               aria-label="Back to workspaces"
             >
               <ArrowLeft size={17} />
             </Link>
             <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold leading-tight tracking-tight text-ink sm:text-2xl">{workspace.name}</h1>
+              <h1 className="truncate text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">{workspace.name}</h1>
               <p className="mt-0.5 text-xs font-bold uppercase tracking-wide text-stone">
                 {documents.length} documents / {processingCount} processing
               </p>
             </div>
           </div>
 
-          <div className="grid w-full grid-cols-2 rounded-full border border-hairline bg-canvas p-1 shadow-[0_12px_36px_rgba(17,17,17,0.06)] sm:w-auto">
+          <div className="grid w-full grid-cols-2 rounded-full border border-hairline bg-canvas p-0.5 shadow-[0_12px_36px_rgba(17,17,17,0.06)] sm:w-auto">
             <button
               onClick={() => setActiveTab("documents")}
-              className={`inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition duration-200 ease-out ${
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold transition duration-200 ease-out ${
                 activeTab === "documents" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
               }`}
             >
@@ -131,7 +131,7 @@ export default function WorkspaceDashboard() {
             </button>
             <button
               onClick={() => setActiveTab("chat")}
-              className={`inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition duration-200 ease-out ${
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold transition duration-200 ease-out ${
                 activeTab === "chat" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
               }`}
             >
@@ -141,8 +141,8 @@ export default function WorkspaceDashboard() {
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-2 xl:grid-cols-[minmax(16rem,19rem)_minmax(0,1fr)] 2xl:grid-cols-[18rem_minmax(0,1fr)]">
-          <section className={`${activeTab === "documents" ? "flex" : "hidden xl:flex"} min-h-0 flex-col gap-3`}>
+        <div className="grid min-h-0 flex-1 gap-2 xl:grid-cols-[minmax(14.75rem,17rem)_minmax(0,1fr)] 2xl:grid-cols-[16rem_minmax(0,1fr)]">
+          <section className={`${activeTab === "documents" ? "flex" : "hidden xl:flex"} min-h-0 min-w-0 flex-col gap-2`}>
             <FileUploadZone workspaceId={id} onUploadComplete={fetchDocuments} />
             {documents.length === 0 ? (
               <div className="soft-panel flex min-h-0 flex-1 items-center justify-center rounded-[1.5rem] p-6 text-center">
@@ -162,7 +162,7 @@ export default function WorkspaceDashboard() {
             )}
           </section>
 
-          <section className={`${activeTab === "chat" ? "flex" : "hidden xl:flex"} min-h-0`}>
+          <section className={`${activeTab === "chat" ? "flex" : "hidden xl:flex"} min-h-0 min-w-0`}>
             <ChatPanel workspaceId={id} hasProcessedDocs={hasProcessedDocs} />
           </section>
         </div>

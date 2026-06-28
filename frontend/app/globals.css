@@ -74,6 +74,7 @@ textarea {
 }
 
 .premium-panel {
+  min-width: 0;
   border: 1px solid rgba(17, 17, 17, 0.08);
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 24px 70px rgba(17, 17, 17, 0.08);
@@ -81,6 +82,7 @@ textarea {
 }
 
 .soft-panel {
+  min-width: 0;
   border: 1px solid rgba(17, 17, 17, 0.07);
   background: rgba(247, 244, 238, 0.78);
   backdrop-filter: blur(18px);

@@ -35,63 +35,75 @@ export default function DocumentList({ documents, onDelete, onProcess, onViewChu
   };
 
   return (
-    <div className="premium-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[1.25rem]">
-      <div className="flex shrink-0 items-center justify-between border-b border-hairline-soft bg-white/70 px-3 py-2.5">
+    <div className="premium-panel flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[1.1rem]">
+      <div className="flex shrink-0 items-center justify-between border-b border-hairline-soft bg-white/78 px-3 py-2">
         <h2 className="text-sm font-extrabold tracking-tight text-ink">Documents</h2>
-        <span className="text-xs font-bold uppercase tracking-wide text-stone">{documents.length} total</span>
+        <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-stone">
+          {documents.length}
+        </span>
       </div>
 
-      <div className="internal-scroll grid min-h-0 flex-1 auto-rows-max gap-2 overflow-y-auto p-2">
+      <div className="internal-scroll grid min-h-0 flex-1 auto-rows-max gap-1.5 overflow-y-auto p-2">
         {documents.map((doc) => {
           const isProcessing = processingId === doc.id || doc.status === "processing";
+
           return (
             <article
               key={doc.id}
-              className="animate-soft-rise rounded-2xl border border-hairline-soft bg-white p-2.5 transition duration-200 ease-out hover:border-ink hover:shadow-[0_14px_32px_rgba(17,17,17,0.05)]"
+              className="animate-soft-rise min-w-0 rounded-[0.95rem] border border-hairline-soft bg-white p-2 transition duration-200 ease-out hover:border-ink hover:shadow-[0_14px_32px_rgba(17,17,17,0.05)]"
             >
-              <div className="flex items-start gap-2">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface text-ink">
-                  <FileText size={15} />
+              <div className="flex min-w-0 items-start gap-2">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface text-ink">
+                  <FileText size={14} />
                 </div>
+
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-xs font-extrabold leading-5 text-ink" title={doc.filename}>
+                  <h3 className="truncate text-[12px] font-extrabold leading-4 text-ink" title={doc.filename}>
                     {doc.filename}
                   </h3>
-                  <p className="text-[11px] font-semibold text-steel">
-                    {formatSize(doc.file_size)} / {new Date(doc.created_at).toLocaleDateString()}
-                  </p>
+                  <div className="mt-1 flex min-w-0 items-center gap-1.5">
+                    <p className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-wide text-steel">
+                      {formatSize(doc.file_size)} / {new Date(doc.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${statusClass(doc.status)}`}>
-                  {doc.status}
-                </span>
               </div>
 
-              <div className="mt-2 grid grid-cols-3 gap-1.5">
-                <button
-                  onClick={() => onProcess(doc.id)}
-                  disabled={isProcessing}
-                  className="inline-flex h-8 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-brand-blue hover:text-brand-blue disabled:opacity-50"
-                  aria-label="Process document"
-                  title="Process document"
+              <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+                <span
+                  className={`min-w-0 truncate rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${statusClass(doc.status)}`}
+                  title={doc.status}
                 >
-                  {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                </button>
-                <button
-                  onClick={() => onViewChunks(doc.id)}
-                  className="inline-flex h-8 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
-                  aria-label="View chunks"
-                  title="View chunks"
-                >
-                  <Eye size={16} />
-                </button>
-                <button
-                  onClick={() => onDelete(doc.id)}
-                  className="inline-flex h-8 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-brand-coral hover:text-brand-coral"
-                  aria-label="Delete document"
-                  title="Delete document"
-                >
-                  <Trash2 size={16} />
-                </button>
+                  {doc.status}
+                </span>
+
+                <div className="grid shrink-0 grid-cols-3 gap-1">
+                  <button
+                    onClick={() => onProcess(doc.id)}
+                    disabled={isProcessing}
+                    className="inline-flex size-7 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-brand-blue hover:text-brand-blue disabled:opacity-50"
+                    aria-label="Process document"
+                    title="Process document"
+                  >
+                    {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+                  </button>
+                  <button
+                    onClick={() => onViewChunks(doc.id)}
+                    className="inline-flex size-7 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
+                    aria-label="View chunks"
+                    title="View chunks"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <button
+                    onClick={() => onDelete(doc.id)}
+                    className="inline-flex size-7 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-brand-coral hover:text-brand-coral"
+                    aria-label="Delete document"
+                    title="Delete document"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             </article>
           );

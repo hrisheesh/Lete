@@ -65,8 +65,12 @@ export default function FileUploadZone({ workspaceId, onUploadComplete }: FileUp
     }
 
     setIsUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    if (successCount > 0) onUploadComplete();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    if (successCount > 0) {
+      onUploadComplete();
+    }
   };
 
   return (
@@ -74,40 +78,50 @@ export default function FileUploadZone({ workspaceId, onUploadComplete }: FileUp
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`shrink-0 overflow-hidden rounded-[1.5rem] border p-4 transition duration-200 ease-out sm:p-5 ${
+      className={`shrink-0 overflow-hidden rounded-[1.1rem] border px-3 py-2.5 transition duration-200 ease-out ${
         isDragging
-          ? "border-brand-blue bg-brand-blue/8 shadow-[0_20px_54px_rgba(20,86,240,0.12)]"
-          : "border-transparent bg-primary text-on-primary shadow-[0_20px_64px_rgba(17,17,17,0.16)]"
+          ? "border-brand-blue bg-brand-blue/8 shadow-[0_16px_42px_rgba(20,86,240,0.12)]"
+          : "border-hairline-soft bg-white shadow-[0_12px_34px_rgba(17,17,17,0.045)]"
       }`}
     >
       <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className={`flex size-10 shrink-0 items-center justify-center rounded-full ${isDragging ? "bg-brand-blue text-white" : "bg-white/12 text-white"}`}>
-            <FileUp size={19} />
+      <div className="flex min-w-0 items-center gap-2.5">
+        <div
+          className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
+            isDragging ? "bg-brand-blue text-white" : "bg-surface text-ink"
+          }`}
+        >
+          <FileUp size={17} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="truncate text-sm font-extrabold leading-5 tracking-tight text-ink">
+              {isDragging ? "Drop to upload" : "Upload files"}
+            </h2>
+            <span className="hidden shrink-0 rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-stone min-[390px]:inline-flex">
+              PDF CSV TXT
+            </span>
           </div>
-          <div className="min-w-0">
-            <h2 className={`truncate text-xl font-bold tracking-tight ${isDragging ? "text-ink" : "text-white"}`}>Drop documents here</h2>
-            <p className={`mt-1.5 text-sm font-semibold leading-6 ${isDragging ? "text-steel" : "text-white/62"}`}>
-              Upload PDFs, CSVs, and text files into this workspace.
-            </p>
-            {error && <p className="mt-3 rounded-2xl bg-brand-coral/15 px-4 py-3 text-sm font-bold text-brand-coral">{error}</p>}
-          </div>
+          <p className="truncate text-[11px] font-semibold leading-4 text-steel">
+            {isUploading ? "Uploading documents..." : "Drag here or choose from your device"}
+          </p>
         </div>
 
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
-          className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition duration-200 ease-out hover:-translate-y-0.5 disabled:opacity-60 ${
-            isDragging ? "bg-primary text-on-primary" : "bg-white text-primary hover:bg-surface"
-          }`}
+          className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:opacity-50"
+          aria-label={isUploading ? "Uploading files" : "Choose files"}
+          title={isUploading ? "Uploading files" : "Choose files"}
         >
-          <UploadCloud size={17} />
-          {isUploading ? "Uploading..." : "Choose files"}
+          <UploadCloud size={16} />
         </button>
       </div>
+
+      {error && <p className="mt-2 rounded-xl bg-brand-coral/10 px-3 py-2 text-xs font-bold text-brand-coral">{error}</p>}
     </div>
   );
 }
