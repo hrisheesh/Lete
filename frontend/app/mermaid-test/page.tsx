@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import RichMarkdown from "@/components/markdown/RichMarkdown";
-import { Bot } from "lucide-react";
 
 export default function MarkdownPlayground() {
   const [markdown, setMarkdown] = useState<string>(`# Rich Markdown Renderer Test
@@ -73,97 +72,148 @@ export default function MarkdownPlayground() {
 }
 \`\`\`
 
-## 2. Mermaid Diagrams
+## 2. Mermaid Diagrams (Advanced & Complex)
 
-### Flowchart
-\`\`\`mermaid
-flowchart TD
-  subgraph PreTrainingPhase ["Pre-Training Phase: Core Knowledge Building"]
-    direction TB
-    A["Large Raw Text Corpus Input"] --> B["Tokenization: Split text into subword token units"]
-    B --> C["Token Embedding: Convert tokens to numerical vectors"]
-  end
-\`\`\`
-
-### Sequence Diagram
+### Complex Sequence Diagram
 \`\`\`mermaid
 sequenceDiagram
-    Alice->>+John: Hello John, how are you?
-    Alice->>+John: John, can you hear me?
-    John-->>-Alice: Hi Alice, I can hear you!
-    John-->>-Alice: I feel great!
+    autonumber
+    actor User as Client User
+    participant Browser
+    participant API as GraphQL API
+    participant Cache as Redis Cache
+    participant DB as Postgres DB
+
+    User->>Browser: Interacts with UI
+    Browser->>API: query { getUserProfile }
+    activate API
+    API->>Cache: checkCache(userId)
+    activate Cache
+    alt Cache Hit
+        Cache-->>API: return cachedProfile
+    else Cache Miss
+        Cache-->>API: return null
+        API->>DB: SELECT * FROM users WHERE id = 1
+        activate DB
+        DB-->>API: return userData
+        deactivate DB
+        API->>Cache: setCache(userId, userData, ttl)
+    end
+    deactivate Cache
+    API-->>Browser: HTTP 200 OK (Profile Data)
+    deactivate API
+    Browser-->>User: Renders Dashboard
 \`\`\`
 
-### Pie Chart
+### GitGraph
 \`\`\`mermaid
-pie title Pets adopted by volunteers
-    "Dogs" : 386
-    "Cats" : 85
-    "Rats" : 15
+gitGraph
+    commit id: "Initial commit"
+    branch develop
+    checkout develop
+    commit id: "feat: add login"
+    branch feature-auth
+    checkout feature-auth
+    commit id: "feat: jwt integration"
+    commit id: "fix: token refresh"
+    checkout develop
+    merge feature-auth
+    checkout main
+    merge develop tag: "v1.0.0"
+    commit id: "docs: update readme"
 \`\`\`
 
-## 3. Mathematical Equations (KaTeX)
-The quadratic formula is $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
-
-Block math:
-$$
-\\int_0^\\infty x^2 e^{-x} dx = 2
-$$
-
-## 4. Syntax Highlighting (Prism)
-\`\`\`python
-def calculate_fibonacci(n):
-    if n <= 0: return []
-    elif n == 1: return [0]
-    result = [0, 1]
-    for _ in range(2, n):
-        result.append(result[-1] + result[-2])
-    return result
+### Gantt Chart
+\`\`\`mermaid
+gantt
+    title Q3 Development Roadmap
+    dateFormat  YYYY-MM-DD
+    section Backend
+    Design API Architecture     :done,    des1, 2026-07-01,2026-07-05
+    Implement Authentication    :active,  dev1, 2026-07-06, 7d
+    Optimize Postgres Queries   :         dev2, after dev1, 10d
+    section Frontend
+    Wireframe Dashboard         :done,    ui1, 2026-07-01, 3d
+    Build React Components      :         ui2, 2026-07-08, 14d
+    State Management (Redux)    :         ui3, after ui2, 7d
 \`\`\`
 
-## 5. Enterprise Tables
-| Feature | Old Renderer | Rich Renderer |
-| :--- | :--- | :--- |
-| **Code Blocks** | Basic | Prism IDE Theme with Copy |
-| **Charts** | None | Native Recharts |
-| **Mermaid** | Crash-prone | Strict Mode Sandboxed |
-| **Math** | Broken | LaTeX / KaTeX |
+### Entity Relationship (ER) Diagram
+\`\`\`mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    CUSTOMER {
+        string name
+        string customerNumber
+        string sector
+    }
+    ORDER ||--|{ LINE-ITEM : contains
+    ORDER {
+        int orderNumber
+        string deliveryAddress
+    }
+    LINE-ITEM {
+        string productCode
+        int quantity
+        float pricePerUnit
+    }
+\`\`\`
+
+### State Diagram
+\`\`\`mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing: New Job Arrives
+    Processing --> Validating: Extract Metadata
+    Validating --> Rejected: Invalid Schema
+    Validating --> Executing: Schema OK
+    Executing --> Completed: Success
+    Executing --> Failed: Exception Thrown
+    Failed --> Processing: Retry (max 3)
+    Failed --> [*]: Max Retries Reached
+    Completed --> [*]
+    Rejected --> [*]
+\`\`\`
+
+## 3. LaTeX Math Rendering
+
+### Display Math (Block)
+The Riemann zeta function is defined as:
+$$
+\\zeta(s) = \\sum_{n=1}^{\\infty} \\frac{1}{n^s} = \\prod_{p \\text{ prime}} \\frac{1}{1 - p^{-s}}
+$$
+
+### Inline Math
+Einstein's famous equation $E = mc^2$ shows the equivalence of mass and energy, where $E$ is energy, $m$ is mass, and $c$ is the speed of light ($c \\approx 3 \\times 10^8 \\text{ m/s}$).
+
+## 4. Typography & Blockquotes
+
+> **Design Philosophy**
+> 
+> "Good design is obvious. Great design is transparent."
+> — *Joe Sparano*
+
+This demonstrates how the rich text engine handles **bold text**, *italic text*, and \`inline code\` blocks wrapped seamlessly around inline citations like this one [1].
 `);
 
   return (
-    <div className="flex h-screen flex-col bg-white">
-      <header className="flex h-14 items-center justify-between border-b border-hairline px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-on-primary shadow-sm">
-            <Bot size={18} />
-          </div>
-          <div>
-            <h1 className="text-sm font-black tracking-tight text-ink">SOTA Markdown Engine</h1>
-            <p className="text-[11px] font-semibold text-steel">Test and debug rich text</p>
-          </div>
+    <div className="flex min-h-screen bg-[#F9F9F9]">
+      <div className="flex w-1/2 flex-col border-r border-[#E5E5E5] bg-white">
+        <div className="border-b border-[#E5E5E5] bg-[#FAFAFA] p-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#6B7280]">Markdown Input</h2>
         </div>
-      </header>
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Side: Editor */}
-        <div className="flex w-1/2 flex-col border-r border-hairline bg-[#f8f9fa]">
-          <div className="flex items-center justify-between bg-stone/40 px-4 py-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-steel">Raw Markdown</span>
-          </div>
-          <textarea
-            className="internal-scroll flex-1 resize-none bg-transparent p-4 text-[13px] font-mono leading-relaxed text-charcoal outline-none placeholder:text-steel/50"
-            value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
-            spellCheck={false}
-          />
+        <textarea
+          className="flex-1 resize-none p-6 font-mono text-sm leading-relaxed text-[#374151] outline-none"
+          value={markdown}
+          onChange={(e) => setMarkdown(e.target.value)}
+        />
+      </div>
+      <div className="flex w-1/2 flex-col overflow-y-auto">
+        <div className="sticky top-0 z-10 border-b border-[#E5E5E5] bg-[#FAFAFA]/90 p-4 backdrop-blur-md">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#6B7280]">Rich Text Output</h2>
         </div>
-        {/* Right Side: Preview */}
-        <div className="flex w-1/2 flex-col bg-white">
-          <div className="flex items-center justify-between bg-stone/40 px-4 py-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-brand-blue-deep">Live Preview</span>
-          </div>
-          <div className="internal-scroll flex-1 overflow-auto p-8">
-            <RichMarkdown content={markdown} />
-          </div>
+        <div className="p-8">
+          <RichMarkdown content={markdown} />
         </div>
       </div>
     </div>
