@@ -29,6 +29,7 @@ class KeywordRepository:
                 SELECT 
                     c.id as chunk_id,
                     c.document_id,
+                    d.filename,
                     c.section_id,
                     c.text,
                     c.contextual_header,
@@ -54,6 +55,7 @@ class KeywordRepository:
             results.append({
                 "chunk_id": row["chunk_id"],
                 "document_id": row["document_id"],
+                "filename": row["filename"],
                 "section_id": row["section_id"],
                 "text": row["text"],
                 "contextual_header": row["contextual_header"],

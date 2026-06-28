@@ -59,6 +59,7 @@ class VectorSearchService:
             SELECT 
                 c.id as chunk_id,
                 c.document_id,
+                d.filename,
                 c.section_id,
                 c.text,
                 c.contextual_header,
@@ -76,6 +77,7 @@ class VectorSearchService:
             final_results.append({
                 "chunk_id": chunk_id,
                 "document_id": row["document_id"],
+                "filename": row["filename"],
                 "section_id": row["section_id"],
                 "text": row["text"],
                 "contextual_header": row["contextual_header"],

@@ -42,9 +42,10 @@ class ContextPacker:
             citation = Citation(
                 id=citation_id,
                 chunk_id=chunk_id,
-                text=text,
                 document_id=document_id,
-                document_name=document_name
+                filename=document_name,
+                contextual_header=header,
+                text_preview=text[:200].rstrip()
             )
             citations.append(citation)
             
