@@ -156,13 +156,23 @@ export default function WorkspaceDashboard() {
       <section className="mx-auto flex h-full min-h-0 w-full max-w-[1680px] flex-col gap-2">
         <div className="premium-panel flex shrink-0 flex-col gap-2 rounded-[1.05rem] p-2 sm:flex-row sm:items-center sm:justify-between sm:px-2.5">
           <div className="flex min-w-0 items-center gap-3">
-            <Link
-              href="/workspaces"
-              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
-              aria-label="Back to workspaces"
-            >
-              <ArrowLeft size={17} />
-            </Link>
+            {activeChatId ? (
+              <button
+                onClick={() => setActiveChatId(null)}
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
+                aria-label="Back to chats"
+              >
+                <ArrowLeft size={17} />
+              </button>
+            ) : (
+              <Link
+                href="/workspaces"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
+                aria-label="Back to workspaces"
+              >
+                <ArrowLeft size={17} />
+              </Link>
+            )}
             <div className="min-w-0 flex-1">
               {isEditing ? (
                 <form onSubmit={handleRenameWorkspace} className="flex items-center gap-2">
@@ -244,14 +254,6 @@ export default function WorkspaceDashboard() {
           <section className={`${activeTab === "chat" ? "flex" : "hidden xl:flex"} min-h-0 min-w-0 flex-1 flex-col overflow-hidden`}>
             {activeChatId ? (
               <div className="flex flex-1 flex-col min-h-0 overflow-hidden bg-canvas rounded-[1.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-hairline">
-                <div className="flex items-center px-4 py-3 border-b border-hairline">
-                  <button 
-                    onClick={() => setActiveChatId(null)}
-                    className="flex items-center gap-1.5 text-xs font-bold text-steel hover:text-ink transition-colors"
-                  >
-                    <ArrowLeft size={14} /> Back to Chats
-                  </button>
-                </div>
                 <div className="flex-1 min-h-0 min-w-0">
                   <ChatPanel key={activeChatId} workspaceId={id} chatId={activeChatId} hasProcessedDocs={hasProcessedDocs} />
                 </div>
