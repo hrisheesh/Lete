@@ -12,9 +12,10 @@ type Chat = {
 
 interface ChatListProps {
   workspaceId: string;
+  onSelectChat: (chatId: string) => void;
 }
 
-export default function ChatList({ workspaceId }: ChatListProps) {
+export default function ChatList({ workspaceId, onSelectChat }: ChatListProps) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -47,7 +48,7 @@ export default function ChatList({ workspaceId }: ChatListProps) {
       });
       if (res.ok) {
         const newChat = await res.json();
-        router.push(`/workspaces/${workspaceId}/chats/${newChat.id}`);
+        onSelectChat(newChat.id);
       }
     } catch (e) {
       console.error(e);
@@ -137,7 +138,7 @@ export default function ChatList({ workspaceId }: ChatListProps) {
               key={chat.id}
               onClick={() => {
                 if (editingChatId !== chat.id) {
-                  router.push(`/workspaces/${workspaceId}/chats/${chat.id}`);
+                  onSelectChat(chat.id);
                 }
               }}
               className="group relative flex cursor-pointer flex-col justify-between rounded-[1.25rem] border border-hairline bg-canvas p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-steel/30 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)]"

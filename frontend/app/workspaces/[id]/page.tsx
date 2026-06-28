@@ -8,6 +8,7 @@ import FileUploadZone from "@/components/FileUploadZone";
 import DocumentList from "@/components/DocumentList";
 import ChunkPreviewModal from "@/components/ChunkPreviewModal";
 import ChatList from "@/components/ChatList";
+import ChatPanel from "@/components/ChatPanel";
 
 const API_BASE = "http://127.0.0.1:8000/api/v1";
 
@@ -37,6 +38,7 @@ export default function WorkspaceDashboard() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
   const hasProcessedDocs = documents.some((document) => document.status === "processed");
   const processingCount = documents.filter((document) => document.status === "processing").length;
@@ -239,8 +241,26 @@ export default function WorkspaceDashboard() {
             )}
           </section>
 
-          <section className={`${activeTab === "chat" ? "block" : "hidden"} min-h-0 min-w-0 flex-1 overflow-y-auto`}>
-            <ChatList workspaceId={id} />
+          <section className={`${activeTab === "chat" ? "flex" : "hidden xl:flex"} min-h-0 min-w-0 flex-1 flex-col overflow-hidden`}>
+            {activeChatId ? (
+              <div className="flex flex-1 flex-col min-h-0 overflow-hidden bg-canvas rounded-[1.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-hairline">
+                <div className="flex items-center px-4 py-3 border-b border-hairline">
+                  <button 
+                    onClick={() => setActiveChatId(null)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-steel hover:text-ink transition-colors"
+                  >
+                    <ArrowLeft size={14} /> Back to Chats
+                  </button>
+                </div>
+                <div className="flex-1 min-h-0 min-w-0">
+                  <ChatPanel key={activeChatId} workspaceId={id} chatId={activeChatId} hasProcessedDocs={hasProcessedDocs} />
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto soft-panel rounded-[1.5rem]">
+                <ChatList workspaceId={id} onSelectChat={setActiveChatId} />
+              </div>
+            )}
           </section>
         </div>
       </section>
