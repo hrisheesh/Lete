@@ -38,3 +38,20 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         except Exception as e:
             print(f"Error generating embeddings: {e}")
             raise e
+
+def get_embedding(conn, text: str) -> list[float]:
+    """Helper to get a single embedding using current settings."""
+    from lete.app.api.settings import get_settings
+    prov_settings = get_settings(conn)
+    
+    # We only support OpenAI embedding provider for now based on previous code
+    embed_provider = OpenAIEmbeddingProvider(
+        api_key=prov_settings.api_key or "",
+        model_name=prov_settings.embedding_model_name or "text-embedding-3-small",
+        base_url=prov_settings.base_url
+    )
+    
+    embeddings = embed_provider.embed([text])
+    if embeddings:
+        return embeddings[0]
+    return []
