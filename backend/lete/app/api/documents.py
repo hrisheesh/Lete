@@ -110,6 +110,7 @@ from lete.app.chunking.context import generate_contextual_header
 
 from fastapi import BackgroundTasks
 from lete.app.db.session import get_connection
+import sqlite_vec
 
 def run_processing_pipeline(job_id: str, document_id: str):
     """
@@ -224,6 +225,8 @@ def run_processing_pipeline(job_id: str, document_id: str):
         doc_repo.update_status(document_id, "processed")
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         # Clean up any chunks created in this failed run to prevent data leakage
         chunk_repo.delete_by_document(document_id)
         job_repo.update(job_id, ProcessingJobUpdate(status="failed", error_message=str(e)))
