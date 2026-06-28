@@ -51,12 +51,12 @@ def get_embedding(conn, text: str) -> list[float]:
     
     prov_settings = get_settings(conn)
     
-    base_url = get_provider_base_url(prov_settings.provider_type, prov_settings.base_url)
+    base_url = get_provider_base_url(prov_settings.embedding_provider, prov_settings.embedding_base_url)
     
     # We only support OpenAI embedding provider for now based on previous code
     embed_provider = OpenAIEmbeddingProvider(
-        api_key=prov_settings.api_key or "",
-        model_name=prov_settings.embedding_model_name or "text-embedding-3-small",
+        api_key=prov_settings.embedding_api_key or "",
+        model_name=prov_settings.embedding_model or "text-embedding-3-small",
         base_url=base_url
     )
     

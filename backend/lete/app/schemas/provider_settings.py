@@ -3,11 +3,15 @@ from typing import Optional
 
 
 class ProviderSettingsBase(BaseModel):
-    provider_type: str
-    base_url: Optional[str] = None
-    api_key: Optional[str] = None
-    model_name: Optional[str] = None
-    embedding_model_name: Optional[str] = None
+    chat_provider: str
+    chat_base_url: Optional[str] = None
+    chat_api_key: Optional[str] = None
+    chat_model: Optional[str] = None
+    
+    embedding_provider: Optional[str] = None
+    embedding_base_url: Optional[str] = None
+    embedding_api_key: Optional[str] = None
+    embedding_model: Optional[str] = None
 
 
 class ProviderSettingsCreate(ProviderSettingsBase):

@@ -195,9 +195,9 @@ def run_processing_pipeline(job_id: str, document_id: str):
         
         prov_settings = get_settings(conn)
         embed_provider = OpenAIEmbeddingProvider(
-            api_key=prov_settings.api_key or "",
-            model_name=prov_settings.embedding_model_name or "text-embedding-3-small",
-            base_url=prov_settings.base_url
+            api_key=prov_settings.embedding_api_key or "",
+            model_name=prov_settings.embedding_model or "text-embedding-3-small",
+            base_url=prov_settings.embedding_base_url
         )
         embed_repo = EmbeddingRepository(conn)
         

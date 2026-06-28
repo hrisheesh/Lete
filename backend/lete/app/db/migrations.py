@@ -20,11 +20,14 @@ def bootstrap_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS provider_settings (
             id TEXT PRIMARY KEY,
-            provider_type TEXT NOT NULL,
-            base_url TEXT,
-            api_key TEXT,
-            model_name TEXT,
-            embedding_model_name TEXT,
+            chat_provider TEXT NOT NULL,
+            chat_base_url TEXT,
+            chat_api_key TEXT,
+            chat_model TEXT,
+            embedding_provider TEXT,
+            embedding_base_url TEXT,
+            embedding_api_key TEXT,
+            embedding_model TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )

@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     huggingface_api_key: str | None = None
     anthropic_api_key: str | None = None
     openrouter_api_key: str | None = None
+    
+    # Environment-provided default Base URLs
+    nvidia_base_url: str | None = None
+    groq_base_url: str | None = None
+    openrouter_base_url: str | None = None
+    mistral_base_url: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -34,10 +34,10 @@ class GenerationService:
         from lete.app.api.settings import get_settings
         
         provider_config = get_settings(self.conn)
-        provider_type = provider_config.provider_type
-        base_url = provider_config.base_url
-        api_key = provider_config.api_key
-        model = provider_config.model_name
+        provider_type = provider_config.chat_provider
+        base_url = provider_config.chat_base_url
+        api_key = provider_config.chat_api_key
+        model = provider_config.chat_model
             
             
         provider = self._get_provider(provider_type, base_url, api_key)
@@ -79,10 +79,10 @@ class GenerationService:
 
         # 4. Construct prompt
         system_prompt = (
-            "You are a highly intelligent and precise AI assistant answering questions based STRICTLY on the provided Context. "
-            "If the Context does not contain the answer, you must truthfully state that you do not know. "
-            "You must cite your sources inline using the provided citation IDs (e.g. [1], [2]). "
-            "Do not hallucinate external information."
+            "You are a highly intelligent and precise AI assistant. "
+            "PRIORITY 1: Answer questions based on the provided Context and cite your sources inline using the provided citation IDs (e.g. [1], [2]). "
+            "PRIORITY 2: If the Context does not contain the answer, you may use your general knowledge to fulfill the user's request, but you MUST clearly state that your answer is based on general knowledge and not the provided documents. "
+            "For creative or formatting requests (e.g., 'draw a mermaid diagram', 'summarize this concept generally'), always attempt to fulfill the request to the best of your ability."
         )
         prompt = (
             f"Here is the context retrieved for the user's query:\n\n"
@@ -91,22 +91,54 @@ class GenerationService:
             f"Please provide a comprehensive answer citing the context above using the [N] format."
         )
         
-        # 5. Generate stream
-        stream = provider.generate_stream(prompt, model, system_prompt=system_prompt)
-        
+        # 5. CoT and rCoT Generation Pipeline (silent reasoning, streamed final answer)
         def generator() -> Generator[str, None, None]:
             full_text = ""
-            for chunk in stream:
+            
+            # PHASE 1: CoT — silent, non-streaming, background reasoning
+            cot_prompt = (
+                f"Context:\n{context_string}\n\n"
+                f"Question: {query_text}\n\n"
+                f"Before answering, think step-by-step. First, analyze what information is available in the Context to answer the Question. "
+                f"If the Context is missing key information, identify what general knowledge will be needed to fully answer the user, especially for formatting or diagram requests."
+            )
+            cot_text = ""
+            for chunk in provider.generate_stream(cot_prompt, model, system_prompt=system_prompt):
+                cot_text += chunk
+                
+            # PHASE 2: rCoT (Verification) — silent, non-streaming, self-critique
+            rcot_prompt = (
+                f"Context:\n{context_string}\n\n"
+                f"Original Question: {query_text}\n\n"
+                f"Initial Reasoning: {cot_text}\n\n"
+                f"Review the Initial Reasoning critically. "
+                f"Verify that any claims attributed to the Context are actually present there. "
+                f"Ensure you are prepared to fulfill any diagram or formatting requests (like mermaid) using general knowledge if the Context lacks specifics."
+            )
+            rcot_text = ""
+            for chunk in provider.generate_stream(rcot_prompt, model, system_prompt=system_prompt):
+                rcot_text += chunk
+                
+            # PHASE 3: Final Answer — streamed to the user
+            final_prompt = (
+                f"Context:\n{context_string}\n\n"
+                f"Question: {query_text}\n\n"
+                f"Reasoning Summary: {cot_text}\n\n"
+                f"Verification: {rcot_text}\n\n"
+                f"Now write the final, comprehensive, well-formatted answer. "
+                f"Draw from the Context first (citing with [N]). If using general knowledge, state that explicitly. "
+                f"Always fulfill requests for diagrams or charts. "
+                f"1. For MERMAID: Use ```mermaid and wrap node text in double quotes (A[\"Node\"]). NEVER use spaces in subgraph IDs.\n"
+                f"2. For CHARTS (bar/line/pie): Use ```chart and output VALID JSON like this: {{\"type\": \"bar\", \"title\": \"Title\", \"data\": [{{\"name\": \"A\", \"value\": 100}}], \"keys\": [\"value\"]}}\n"
+            )
+            for chunk in provider.generate_stream(final_prompt, model, system_prompt=system_prompt):
                 full_text += chunk
                 yield chunk
                 
-            # After stream completes, save the run
+            # Save the run after stream completes
             cursor = self.conn.cursor()
             cursor.execute(
-                """
-                INSERT INTO answer_runs (id, query_id, retrieval_run_id, answer_text, model_used)
-                VALUES (?, ?, ?, ?, ?)
-                """,
+                "INSERT INTO answer_runs (id, query_id, retrieval_run_id, answer_text, model_used) VALUES (?, ?, ?, ?, ?)",
                 (str(uuid.uuid4()), query_id, run_id, full_text, model)
             )
             self.conn.commit()
@@ -117,3 +149,4 @@ class GenerationService:
             "citations": [c.model_dump() for c in citations],
             "stream": generator()
         }
+

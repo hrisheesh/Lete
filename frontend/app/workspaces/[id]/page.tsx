@@ -81,10 +81,25 @@ export default function WorkspaceDashboard() {
     setIsProcessing(docId);
     try {
       const res = await fetch(`${API_BASE}/documents/${docId}/process`, { method: "POST" });
-      if (res.ok) await fetchDocuments();
+      if (!res.ok) return;
+
+      // Poll until status leaves the processing state
+      const poll = async () => {
+        await fetchDocuments();
+        const updated = await fetch(`${API_BASE}/workspaces/${id}/documents`);
+        if (!updated.ok) return;
+        const docs: Document[] = await updated.json();
+        setDocuments(docs);
+        const doc = docs.find((d) => d.id === docId);
+        if (doc && (doc.status === "processing" || doc.status === "embedding" || doc.status === "chunking" || doc.status === "parsing")) {
+          setTimeout(poll, 1500);
+        } else {
+          setIsProcessing(null);
+        }
+      };
+      setTimeout(poll, 1000);
     } catch (e) {
       console.error(e);
-    } finally {
       setIsProcessing(null);
     }
   };

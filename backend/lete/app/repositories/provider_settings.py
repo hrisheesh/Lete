@@ -19,15 +19,20 @@ class ProviderSettingsRepository(
 
         cursor.execute(
             """INSERT INTO provider_settings 
-            (id, provider_type, base_url, api_key, model_name, embedding_model_name, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (id, chat_provider, chat_base_url, chat_api_key, chat_model, 
+             embedding_provider, embedding_base_url, embedding_api_key, embedding_model, 
+             created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 obj_id,
-                obj_in.provider_type,
-                obj_in.base_url,
-                obj_in.api_key,
-                obj_in.model_name,
-                obj_in.embedding_model_name,
+                obj_in.chat_provider,
+                obj_in.chat_base_url,
+                obj_in.chat_api_key,
+                obj_in.chat_model,
+                obj_in.embedding_provider,
+                obj_in.embedding_base_url,
+                obj_in.embedding_api_key,
+                obj_in.embedding_model,
                 now,
                 now,
             ),

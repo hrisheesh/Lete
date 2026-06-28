@@ -27,12 +27,12 @@ def search_workspace(
     query_embedding = None
     
     # We only generate an embedding if an API key or base URL is present (indicating setup)
-    if prov_settings and (prov_settings.api_key or prov_settings.base_url):
+    if prov_settings and (prov_settings.embedding_api_key or prov_settings.embedding_base_url):
         try:
             embed_provider = OpenAIEmbeddingProvider(
-                api_key=prov_settings.api_key or "",
-                model_name=prov_settings.embedding_model_name or "text-embedding-3-small",
-                base_url=prov_settings.base_url
+                api_key=prov_settings.embedding_api_key or "",
+                model_name=prov_settings.embedding_model or "text-embedding-3-small",
+                base_url=prov_settings.embedding_base_url
             )
             # Embed the query
             embeddings = embed_provider.embed([request.query])
