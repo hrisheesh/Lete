@@ -27,7 +27,8 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
                 batch = texts[i:i + batch_size]
                 response = self.client.embeddings.create(
                     input=batch,
-                    model=self.model_name
+                    model=self.model_name,
+                    encoding_format="float"
                 )
                 # Ensure we only return 1536 dimensions as required by our sqlite-vec schema
                 for data in response.data:
