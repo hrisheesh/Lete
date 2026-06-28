@@ -123,6 +123,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
   const generatedId = useId();
   const [svg, setSvg] = useState("");
   const [error, setError] = useState("");
+  const renderHostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -143,8 +144,16 @@ function MermaidDiagram({ chart }: { chart: string }) {
       },
     });
 
-    mermaid
-      .render(id, chart)
+    const renderHost = renderHostRef.current;
+
+    Promise.resolve(mermaid.parse(chart, { suppressErrors: true }))
+      .then((parsed) => {
+        if (!parsed) {
+          throw new Error("Invalid Mermaid syntax");
+        }
+
+        return mermaid.render(id, chart, renderHost ?? undefined);
+      })
       .then(({ svg: renderedSvg }) => {
         if (mounted) {
           setSvg(renderedSvg);
@@ -160,24 +169,35 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
     return () => {
       mounted = false;
+      renderHost?.replaceChildren();
     };
   }, [chart, generatedId]);
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-brand-coral/25 bg-brand-coral/10 p-3 text-sm font-bold text-brand-coral">
-        {error}
+      <div className="my-3 overflow-hidden rounded-2xl border border-brand-coral/20 bg-brand-coral/10 px-4 py-3 text-sm font-bold text-brand-coral">
+        <div ref={renderHostRef} className="hidden" aria-hidden="true" />
+        <div>{error}</div>
+        <pre className="internal-scroll mt-2 max-h-28 overflow-auto rounded-xl bg-white/75 p-3 text-[11px] font-semibold leading-5 text-charcoal">
+          {chart}
+        </pre>
       </div>
     );
   }
 
   if (!svg) {
-    return <div className="rounded-2xl border border-dashed border-hairline bg-white/70 p-4 text-sm font-bold text-steel">Rendering diagram...</div>;
+    return (
+      <div className="my-3 rounded-2xl border border-dashed border-hairline bg-white/70 p-4 text-sm font-bold text-steel">
+        <div ref={renderHostRef} className="hidden" aria-hidden="true" />
+        Rendering diagram...
+      </div>
+    );
   }
 
   return (
-    <div className="internal-scroll overflow-x-auto rounded-2xl border border-hairline bg-white p-4">
-      <div className="min-w-max [&_svg]:h-auto [&_svg]:max-w-none" dangerouslySetInnerHTML={{ __html: svg }} />
+    <div className="internal-scroll my-4 max-h-[28rem] overflow-auto rounded-2xl border border-hairline bg-white p-4 shadow-[0_18px_48px_rgba(38,31,27,0.06)]">
+      <div ref={renderHostRef} className="hidden" aria-hidden="true" />
+      <div className="mx-auto flex min-w-max justify-center [&_svg]:h-auto [&_svg]:max-h-[24rem] [&_svg]:max-w-none" dangerouslySetInnerHTML={{ __html: svg }} />
     </div>
   );
 }
@@ -208,12 +228,26 @@ function FormattedMessage({ content, citations }: { content: string; citations?:
               <InlineWithCitations citations={citations}>{children}</InlineWithCitations>
             </a>
           ),
-          blockquote: ({ children }) => (
-            <blockquote className="my-4 border-l-4 border-brand-blue bg-white/70 py-2 pl-4 pr-3 text-steel">
-              {children}
-            </blockquote>
-          ),
-          code: ({ children, className }) => {
+        blockquote: ({ children }) => (
+          <blockquote className="my-4 rounded-2xl border border-brand-blue/15 bg-brand-blue/5 px-4 py-3 text-[0.95em] font-semibold text-slate shadow-[0_12px_28px_rgba(20,86,240,0.06)]">
+            {children}
+          </blockquote>
+        ),
+        del: ({ children }) => <del className="text-muted decoration-brand-coral/70 decoration-2">{children}</del>,
+        em: ({ children }) => <em className="font-semibold italic text-slate">{children}</em>,
+        input: ({ checked, type }) =>
+          type === "checkbox" ? (
+            <span
+              className={`mr-2 inline-flex size-4 translate-y-[2px] items-center justify-center rounded border ${
+                checked ? "border-primary bg-primary text-on-primary" : "border-hairline bg-white"
+              }`}
+              aria-hidden="true"
+            >
+              {checked ? "✓" : ""}
+            </span>
+          ) : null,
+        strong: ({ children }) => <strong className="font-extrabold text-ink">{children}</strong>,
+        code: ({ children, className }) => {
             const language = /language-(\w+)/.exec(className || "")?.[1];
             const code = String(children).replace(/\n$/, "");
 
@@ -226,7 +260,7 @@ function FormattedMessage({ content, citations }: { content: string; citations?:
             }
 
             return (
-              <pre className="internal-scroll my-4 overflow-x-auto rounded-2xl bg-primary p-4 text-xs leading-6 text-on-primary">
+            <pre className="internal-scroll my-4 max-h-80 overflow-auto rounded-2xl bg-primary p-4 text-xs leading-6 text-on-primary shadow-[0_18px_48px_rgba(17,17,17,0.12)]">
                 <code className={className}>{code}</code>
               </pre>
             );
@@ -259,7 +293,7 @@ function FormattedMessage({ content, citations }: { content: string; citations?:
             </p>
           ),
           table: ({ children }) => (
-            <div className="internal-scroll my-4 overflow-x-auto rounded-2xl border border-hairline bg-white shadow-[0_14px_32px_rgba(38,31,27,0.05)]">
+          <div className="internal-scroll my-4 max-w-full overflow-x-auto rounded-2xl border border-hairline bg-white shadow-[0_14px_32px_rgba(38,31,27,0.05)]">
               <table className="w-full min-w-[36rem] border-collapse text-left text-sm">{children}</table>
             </div>
           ),
@@ -274,7 +308,8 @@ function FormattedMessage({ content, citations }: { content: string; citations?:
               <InlineWithCitations citations={citations}>{children}</InlineWithCitations>
             </th>
           ),
-          thead: ({ children }) => <thead>{children}</thead>,
+        thead: ({ children }) => <thead className="bg-surface text-[11px] uppercase tracking-wide text-stone">{children}</thead>,
+        tr: ({ children }) => <tr className="transition-colors odd:bg-white even:bg-surface/35 hover:bg-brand-blue/5">{children}</tr>,
           ul: ({ children }) => <ul className="my-3 list-disc space-y-2 pl-5 marker:text-stone">{children}</ul>,
         }}
       >
@@ -476,8 +511,8 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
   };
 
   return (
-    <div className="premium-panel flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.5rem]">
-      <div className="flex shrink-0 items-center justify-between border-b border-hairline-soft bg-white/70 px-4 py-3 sm:px-5">
+    <div className="premium-panel flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.25rem]">
+      <div className="flex shrink-0 items-center justify-between border-b border-hairline-soft bg-white/70 px-4 py-2.5 sm:px-5">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-stone">Grounded chat</p>
           <h2 className="mt-0.5 text-lg font-bold tracking-tight text-ink">Ask your workspace</h2>
@@ -487,7 +522,7 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
         </span>
       </div>
 
-      <div className="internal-scroll min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
+      <div className="internal-scroll min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-5">
         {messages.length === 0 ? (
           <EmptyState hasProcessedDocs={hasProcessedDocs} />
         ) : (
@@ -503,8 +538,8 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
                     </div>
                   )}
 
-                  <div
-                    className={`max-w-[min(48rem,calc(100%-3rem))] overflow-hidden rounded-[1.5rem] px-4 py-3 sm:px-5 sm:py-4 ${
+                    <div
+                      className={`max-w-[min(68rem,calc(100%-3rem))] overflow-hidden rounded-[1.35rem] px-4 py-3 sm:px-5 sm:py-4 ${
                       isUser
                         ? "bg-primary text-on-primary shadow-[0_16px_42px_rgba(17,17,17,0.16)]"
                         : "border border-hairline-soft bg-canvas text-slate shadow-[0_14px_44px_rgba(17,17,17,0.05)]"

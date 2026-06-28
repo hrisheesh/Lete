@@ -34,7 +34,7 @@ export default function WorkspaceDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedChunkDocId, setSelectedChunkDocId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("documents");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
 
   const hasProcessedDocs = documents.some((document) => document.status === "processed");
   const processingCount = documents.filter((document) => document.status === "processing").length;
@@ -101,8 +101,8 @@ export default function WorkspaceDashboard() {
 
   return (
     <main className="app-screen">
-      <section className="mx-auto flex h-full max-w-[1440px] min-h-0 flex-col gap-3">
-        <div className="premium-panel flex shrink-0 flex-col gap-3 rounded-[1.5rem] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+      <section className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-2">
+        <div className="premium-panel flex shrink-0 flex-col gap-2 rounded-[1.25rem] p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/workspaces"
@@ -112,7 +112,7 @@ export default function WorkspaceDashboard() {
               <ArrowLeft size={17} />
             </Link>
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-bold leading-tight tracking-tight text-ink sm:text-3xl">{workspace.name}</h1>
+              <h1 className="truncate text-xl font-bold leading-tight tracking-tight text-ink sm:text-2xl">{workspace.name}</h1>
               <p className="mt-0.5 text-xs font-bold uppercase tracking-wide text-stone">
                 {documents.length} documents / {processingCount} processing
               </p>
@@ -141,7 +141,7 @@ export default function WorkspaceDashboard() {
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(21rem,0.82fr)_minmax(0,1.18fr)]">
+        <div className="grid min-h-0 flex-1 gap-2 xl:grid-cols-[minmax(16rem,19rem)_minmax(0,1fr)] 2xl:grid-cols-[18rem_minmax(0,1fr)]">
           <section className={`${activeTab === "documents" ? "flex" : "hidden xl:flex"} min-h-0 flex-col gap-3`}>
             <FileUploadZone workspaceId={id} onUploadComplete={fetchDocuments} />
             {documents.length === 0 ? (

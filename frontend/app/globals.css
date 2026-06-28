@@ -129,6 +129,21 @@ textarea {
   background: rgba(17, 17, 17, 0.18);
 }
 
+.chat-markdown {
+  overflow-wrap: anywhere;
+}
+
+.chat-markdown svg {
+  display: block;
+  max-width: 100%;
+}
+
+.chat-markdown .mermaid,
+.chat-markdown [id^="mermaid-"] {
+  max-width: 100%;
+  overflow: hidden;
+}
+
 @keyframes softRise {
   from {
     opacity: 0;
