@@ -11,7 +11,7 @@ class CsvParser(BaseParser):
     """
     ROWS_PER_SECTION = 100
 
-    def parse(self, file_path: str, document_id: str) -> List[DocumentSectionCreate]:
+    def parse(self, file_path: str, document_id: str, filename: str = "") -> List[DocumentSectionCreate]:
         sections = []
         section_idx = 0
 

@@ -4,7 +4,7 @@ from lete.app.schemas.section import DocumentSectionCreate
 from lete.app.parsing.base import BaseParser
 
 class PdfParser(BaseParser):
-    def parse(self, file_path: str, document_id: str) -> List[DocumentSectionCreate]:
+    def parse(self, file_path: str, document_id: str, filename: str = "") -> List[DocumentSectionCreate]:
         sections = []
         doc = fitz.open(file_path)
         

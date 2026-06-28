@@ -31,17 +31,22 @@ class XlsxParser(BaseParser):
     #  Public API                                                          #
     # ------------------------------------------------------------------ #
 
-    def parse(self, file_path: str, document_id: str) -> List[DocumentSectionCreate]:
-        ext = file_path.rsplit(".", 1)[-1].lower() if "." in file_path else ""
+    def parse(self, file_path: str, document_id: str, filename: str = "") -> List[DocumentSectionCreate]:
+        # CRITICAL: files are stored on disk using their SHA-256 hash (no extension).
+        # We MUST use the original `filename` (e.g. "report.xls") to detect format,
+        # NOT `file_path` (e.g. ".../a43b1ae1...") which has no extension at all.
+        source = filename if filename else file_path
+        ext = source.rsplit(".", 1)[-1].lower() if "." in source else ""
 
         if ext in OPENPYXL_EXTS:
             return self._parse_openpyxl(file_path, document_id)
         elif ext in XLRD_EXTS:
             return self._parse_xlrd(file_path, document_id)
         else:
-            # Shouldn't happen — registry validated the ext at upload time.
-            # Try openpyxl as last resort (it gives a clear error message).
-            return self._parse_openpyxl(file_path, document_id)
+            raise ValueError(
+                f"XlsxParser cannot determine format for '{filename or file_path}'. "
+                f"Supported: {sorted(OPENPYXL_EXTS | XLRD_EXTS)}"
+            )
 
     # ------------------------------------------------------------------ #
     #  Private helpers                                                     #

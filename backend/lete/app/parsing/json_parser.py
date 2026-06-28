@@ -11,7 +11,7 @@ class JsonParser(BaseParser):
     """
     MAX_ITEMS_PER_SECTION = 20
 
-    def parse(self, file_path: str, document_id: str) -> List[DocumentSectionCreate]:
+    def parse(self, file_path: str, document_id: str, filename: str = "") -> List[DocumentSectionCreate]:
         import json
 
         sections = []

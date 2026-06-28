@@ -10,7 +10,7 @@ class PptxParser(BaseParser):
     Extracts: title, body text, table data, and alt-text from images.
     """
 
-    def parse(self, file_path: str, document_id: str) -> List[DocumentSectionCreate]:
+    def parse(self, file_path: str, document_id: str, filename: str = "") -> List[DocumentSectionCreate]:
         from pptx import Presentation
         from pptx.util import Pt
         from pptx.enum.shapes import MSO_SHAPE_TYPE

@@ -145,9 +145,10 @@ def run_processing_pipeline(job_id: str, document_id: str):
         file_path = os.path.join(UPLOAD_DIR, doc.workspace_id, doc.file_hash)
         ext = doc.filename.split('.')[-1].lower() if '.' in doc.filename else 'txt'
         
-        # Phase 1: Parse sections
+        # Phase 1: Parse sections — pass the original filename so parsers can
+        # detect format. Files on disk are stored as SHA-256 hashes (no extension).
         parser = ParserRegistry.get_parser(ext)
-        sections = parser.parse(file_path, document_id)
+        sections = parser.parse(file_path, document_id, filename=doc.filename)
         
         section_repo.delete_by_document(document_id)
         created_sections = []
