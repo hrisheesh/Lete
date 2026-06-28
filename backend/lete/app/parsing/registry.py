@@ -25,10 +25,14 @@ class ParserRegistry:
         "md":   TxtParser,
         "rst":  TxtParser,
         # Structured data
-        "csv":  CsvParser,   # Proper CSV parser, not raw text dump
+        "csv":  CsvParser,
         "tsv":  CsvParser,
+        # Excel family — all handled by python-calamine (standard xlsx, Strict xlsx, legacy xls, xlsb)
         "xlsx": XlsxParser,
         "xls":  XlsxParser,
+        "xlsm": XlsxParser,
+        "xlsb": XlsxParser,
+        "ods":  XlsxParser,   # OpenDocument Spreadsheet — also supported by calamine
         # Document formats
         "pdf":  PdfParser,
         "docx": DocxParser,

@@ -2,156 +2,85 @@ from typing import List
 from lete.app.schemas.section import DocumentSectionCreate
 from lete.app.parsing.base import BaseParser
 
-# Format routing:
-#   .xlsx / .xlsm / .xltx / .xltm  →  openpyxl (XML-based, modern Excel)
-#   .xls                            →  xlrd 2.x  (BIFF8 binary, Excel 97-2003)
+# python-calamine is a Rust-based library that handles ALL Excel formats correctly:
+#   - .xlsx  (standard Open XML)
+#   - .xlsx  (Strict Open XML — which openpyxl CANNOT read)
+#   - .xls   (legacy BIFF8 binary, Excel 97-2003)
+#   - .xlsb  (binary xlsx)
+#   - .ods   (OpenDocument Spreadsheet)
 #
-# openpyxl CANNOT open .xls files — they raise InvalidFileException.
-# xlrd 2.x CANNOT open .xlsx files — support was intentionally dropped.
-# We detect at parse-time by file extension and dispatch accordingly.
-
-OPENPYXL_EXTS = frozenset({"xlsx", "xlsm", "xltx", "xltm"})
-XLRD_EXTS     = frozenset({"xls"})
+# We replace the old openpyxl+xlrd dual-backend approach with a single calamine
+# backend that handles all formats transparently, regardless of file extension.
 
 
 class XlsxParser(BaseParser):
     """
-    Parses Excel files using the correct backend per format:
-      - Modern XML formats (.xlsx/.xlsm/.xltx/.xltm) → openpyxl
-      - Legacy binary format (.xls, BIFF8)            → xlrd
-
-    Each worksheet becomes its own batch of sections.
-    Rows are grouped (ROWS_PER_SECTION at a time) and formatted as
-    'Column: Value' pairs so each chunk is semantically self-contained
-    and produces high-quality embeddings.
+    Parses all Excel-family files (.xlsx, .xls, .xlsb, .ods, etc.) via python-calamine.
+    
+    calamine auto-detects the actual file format from its binary content (magic bytes),
+    completely ignoring the filename extension. This means it correctly handles:
+      - Standard xlsx (ZIP/OOXML)
+      - Strict Open XML xlsx (the variant that breaks openpyxl)
+      - Legacy .xls binary (BIFF8)
+      - .xlsb (binary xlsx)
+    
+    Each worksheet produces batches of sections so every chunk is self-contained
+    (header + N rows), yielding high-quality embeddings.
     """
     ROWS_PER_SECTION = 100
 
-    # ------------------------------------------------------------------ #
-    #  Public API                                                          #
-    # ------------------------------------------------------------------ #
-
     def parse(self, file_path: str, document_id: str, filename: str = "") -> List[DocumentSectionCreate]:
-        # CRITICAL: files are stored on disk using their SHA-256 hash (no extension).
-        # We MUST use the original `filename` (e.g. "report.xls") to detect format,
-        # NOT `file_path` (e.g. ".../a43b1ae1...") which has no extension at all.
-        source = filename if filename else file_path
-        ext = source.rsplit(".", 1)[-1].lower() if "." in source else ""
+        from python_calamine import CalamineWorkbook
 
-        if ext in OPENPYXL_EXTS:
-            return self._parse_openpyxl(file_path, document_id)
-        elif ext in XLRD_EXTS:
-            return self._parse_xlrd(file_path, document_id)
-        else:
-            raise ValueError(
-                f"XlsxParser cannot determine format for '{filename or file_path}'. "
-                f"Supported: {sorted(OPENPYXL_EXTS | XLRD_EXTS)}"
-            )
-
-    # ------------------------------------------------------------------ #
-    #  Private helpers                                                     #
-    # ------------------------------------------------------------------ #
-
-    def _build_sections(
-        self,
-        sheet_name: str,
-        header: List[str],
-        data_rows: List[List[str]],
-        document_id: str,
-        section_idx_start: int,
-    ) -> List[DocumentSectionCreate]:
-        """Common section-building logic shared by both backends."""
-        sections = []
-        section_idx = section_idx_start
-        header_line = ", ".join(h for h in header if h)
-
-        for batch_start in range(0, max(len(data_rows), 1), self.ROWS_PER_SECTION):
-            batch = data_rows[batch_start: batch_start + self.ROWS_PER_SECTION]
-            if not batch:
-                continue
-
-            lines = [
-                f"Sheet: {sheet_name}",
-                f"Columns: {header_line}",
-                "",
-            ]
-            for row in batch:
-                pairs = [
-                    f"{col}: {val}"
-                    for col, val in zip(header, row)
-                    if col and val
-                ]
-                if pairs:
-                    lines.append(" | ".join(pairs))
-
-            content = self._clean_text("\n".join(lines))
-            if content:
-                sections.append(
-                    DocumentSectionCreate(
-                        document_id=document_id,
-                        content=content,
-                        page_number=1,
-                        section_index=section_idx,
-                    )
-                )
-                section_idx += 1
-
-        return sections
-
-    def _parse_openpyxl(
-        self, file_path: str, document_id: str
-    ) -> List[DocumentSectionCreate]:
-        """Handle .xlsx / .xlsm / .xltx / .xltm via openpyxl."""
-        import openpyxl
-
-        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        wb = CalamineWorkbook.from_path(file_path)
         sections: List[DocumentSectionCreate] = []
         section_idx = 0
 
-        for sheet_name in wb.sheetnames:
-            ws = wb[sheet_name]
-            rows = list(ws.iter_rows(values_only=True))
+        for sheet_name in wb.sheet_names:
+            sheet = wb.get_sheet_by_name(sheet_name)
+            rows = list(sheet.to_python())
+
             if not rows:
                 continue
 
-            header = [str(c) if c is not None else "" for c in rows[0]]
+            # Treat first row as header; stringify all values
+            header = [str(cell) if cell is not None else "" for cell in rows[0]]
             data_rows = [
-                [str(c) if c is not None else "" for c in row]
+                [str(cell) if cell is not None else "" for cell in row]
                 for row in rows[1:]
             ]
-            new_sections = self._build_sections(
-                sheet_name, header, data_rows, document_id, section_idx
-            )
-            sections.extend(new_sections)
-            section_idx += len(new_sections)
 
-        wb.close()
-        return sections
+            header_line = ", ".join(h for h in header if h)
 
-    def _parse_xlrd(
-        self, file_path: str, document_id: str
-    ) -> List[DocumentSectionCreate]:
-        """Handle legacy .xls (BIFF8, Excel 97-2003) via xlrd 2.x."""
-        import xlrd
+            for batch_start in range(0, max(len(data_rows), 1), self.ROWS_PER_SECTION):
+                batch = data_rows[batch_start: batch_start + self.ROWS_PER_SECTION]
+                if not batch:
+                    continue
 
-        wb = xlrd.open_workbook(file_path)
-        sections: List[DocumentSectionCreate] = []
-        section_idx = 0
+                lines = [
+                    f"Sheet: {sheet_name}",
+                    f"Columns: {header_line}",
+                    "",
+                ]
+                for row in batch:
+                    pairs = [
+                        f"{col}: {val}"
+                        for col, val in zip(header, row)
+                        if col and val
+                    ]
+                    if pairs:
+                        lines.append(" | ".join(pairs))
 
-        for sheet_name in wb.sheet_names():
-            ws = wb.sheet_by_name(sheet_name)
-            if ws.nrows == 0:
-                continue
-
-            header = [str(ws.cell_value(0, c)) for c in range(ws.ncols)]
-            data_rows = [
-                [str(ws.cell_value(r, c)) for c in range(ws.ncols)]
-                for r in range(1, ws.nrows)
-            ]
-            new_sections = self._build_sections(
-                sheet_name, header, data_rows, document_id, section_idx
-            )
-            sections.extend(new_sections)
-            section_idx += len(new_sections)
+                content = self._clean_text("\n".join(lines))
+                if content:
+                    sections.append(
+                        DocumentSectionCreate(
+                            document_id=document_id,
+                            content=content,
+                            page_number=1,
+                            section_index=section_idx,
+                        )
+                    )
+                    section_idx += 1
 
         return sections
