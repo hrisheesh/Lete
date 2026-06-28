@@ -51,6 +51,7 @@ class GenerationService:
         
         # 3. Create queries record
         query_id = str(uuid.uuid4())
+        cursor = self.conn.cursor()
         cursor.execute(
             "INSERT INTO queries (id, workspace_id, query_text) VALUES (?, ?, ?)",
             (query_id, workspace_id, query_text)
