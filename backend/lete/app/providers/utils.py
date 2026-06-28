@@ -4,9 +4,6 @@ def get_provider_base_url(provider_type: str, custom_base_url: str | None = None
     If a custom_base_url is provided (e.g. for local or openrouter overrides), it is returned.
     Otherwise, returns the canonical endpoint for the provider.
     """
-    if custom_base_url:
-        return custom_base_url
-        
     canonical_urls = {
         "groq": "https://api.groq.com/openai/v1",
         "mistral": "https://api.mistral.ai/v1",
@@ -14,7 +11,13 @@ def get_provider_base_url(provider_type: str, custom_base_url: str | None = None
         "nvidia": "https://integrate.api.nvidia.com/v1"
     }
     
-    return canonical_urls.get(provider_type)
+    if provider_type in canonical_urls:
+        return canonical_urls[provider_type]
+        
+    if custom_base_url:
+        return custom_base_url
+        
+    return None
 
 def is_openai_compatible(provider_type: str) -> bool:
     """Check if the provider uses the OpenAI client format."""
