@@ -10,7 +10,7 @@ jest.mock('@/components/HealthCheck', () => {
 describe('Home Page', () => {
   it('renders the welcome heading', () => {
     render(<Page />);
-    const heading = screen.getByRole('heading', { name: /Welcome to Lete/i });
+    const heading = screen.getByRole('heading', { name: /Answers stay attached to source\./i });
     expect(heading).toBeInTheDocument();
   });
   

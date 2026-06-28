@@ -71,13 +71,17 @@ export default function WorkspaceDashboard() {
     load();
   }, [fetchWorkspace, fetchDocuments]);
 
+  const handleDelete = async (docId: string) => {
+    if (!confirm("Delete this document?")) return;
+    await fetch(`${API_BASE}/documents/${docId}`, { method: "DELETE" });
+    setDocuments((docs) => docs.filter((doc) => doc.id !== docId));
+  };
+
   const handleProcess = async (docId: string) => {
     setIsProcessing(docId);
     try {
       const res = await fetch(`${API_BASE}/documents/${docId}/process`, { method: "POST" });
-      if (res.ok) {
-        await fetchDocuments();
-      }
+      if (res.ok) await fetchDocuments();
     } catch (e) {
       console.error(e);
     } finally {
@@ -85,81 +89,86 @@ export default function WorkspaceDashboard() {
     }
   };
 
-  const handleDelete = async (docId: string) => {
-    if (!confirm("Delete this document?")) return;
-    try {
-      const res = await fetch(`${API_BASE}/documents/${docId}`, { method: "DELETE" });
-      if (res.ok) {
-        setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  if (loading) {
-    return <div className="mx-auto max-w-[1320px] px-4 py-12 text-sm font-bold text-steel sm:px-6 lg:px-8">Loading workspace...</div>;
+  if (loading || !workspace) {
+    return (
+      <main className="app-screen">
+        <div className="mx-auto flex h-full max-w-[1320px] items-center justify-center">
+          <div className="premium-panel rounded-[1.5rem] px-5 py-4 text-sm font-bold text-steel">Loading workspace...</div>
+        </div>
+      </main>
+    );
   }
 
-  if (!workspace) return null;
-
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <div className="mb-5 flex flex-col gap-4 lg:mb-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <Link
-            href="/workspaces"
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-hairline bg-canvas px-4 text-sm font-bold text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </Link>
-          <h1 className="mt-5 break-words text-4xl font-bold leading-tight tracking-tight text-ink sm:text-6xl">{workspace.name}</h1>
-          <p className="mt-2 text-sm font-bold text-steel">
-            {documents.length} documents / {processingCount} processing
-          </p>
+    <main className="app-screen">
+      <section className="mx-auto flex h-full max-w-[1440px] min-h-0 flex-col gap-3">
+        <div className="premium-panel flex shrink-0 flex-col gap-3 rounded-[1.5rem] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              href="/workspaces"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
+              aria-label="Back to workspaces"
+            >
+              <ArrowLeft size={17} />
+            </Link>
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-bold leading-tight tracking-tight text-ink sm:text-3xl">{workspace.name}</h1>
+              <p className="mt-0.5 text-xs font-bold uppercase tracking-wide text-stone">
+                {documents.length} documents / {processingCount} processing
+              </p>
+            </div>
+          </div>
+
+          <div className="grid w-full grid-cols-2 rounded-full border border-hairline bg-canvas p-1 shadow-[0_12px_36px_rgba(17,17,17,0.06)] sm:w-auto">
+            <button
+              onClick={() => setActiveTab("documents")}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition duration-200 ease-out ${
+                activeTab === "documents" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
+              }`}
+            >
+              <FileText size={16} />
+              Documents
+            </button>
+            <button
+              onClick={() => setActiveTab("chat")}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition duration-200 ease-out ${
+                activeTab === "chat" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
+              }`}
+            >
+              <MessageSquare size={16} />
+              Chat
+            </button>
+          </div>
         </div>
 
-        <div className="grid w-full grid-cols-2 rounded-full border border-hairline bg-canvas p-1 shadow-[0_12px_36px_rgba(17,17,17,0.06)] sm:inline-grid sm:w-auto">
-          <button
-            onClick={() => setActiveTab("documents")}
-            className={`inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition duration-200 ease-out hover:-translate-y-0.5 ${
-              activeTab === "documents" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
-            }`}
-          >
-            <FileText size={16} />
-            Documents
-          </button>
-          <button
-            onClick={() => setActiveTab("chat")}
-            className={`inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition duration-200 ease-out hover:-translate-y-0.5 ${
-              activeTab === "chat" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
-            }`}
-          >
-            <MessageSquare size={16} />
-            Chat
-          </button>
-        </div>
-      </div>
+        <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(21rem,0.82fr)_minmax(0,1.18fr)]">
+          <section className={`${activeTab === "documents" ? "flex" : "hidden xl:flex"} min-h-0 flex-col gap-3`}>
+            <FileUploadZone workspaceId={id} onUploadComplete={fetchDocuments} />
+            {documents.length === 0 ? (
+              <div className="soft-panel flex min-h-0 flex-1 items-center justify-center rounded-[1.5rem] p-6 text-center">
+                <div>
+                  <p className="text-xl font-bold tracking-tight text-ink">No documents yet</p>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-steel">Upload a file to begin indexing this workspace.</p>
+                </div>
+              </div>
+            ) : (
+              <DocumentList
+                documents={documents}
+                onDelete={handleDelete}
+                onProcess={handleProcess}
+                onViewChunks={setSelectedChunkDocId}
+                processingId={isProcessing}
+              />
+            )}
+          </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(22rem,0.82fr)_minmax(0,1.18fr)]">
-        <div className={`${activeTab === "documents" ? "block" : "hidden xl:block"} space-y-5`}>
-          <FileUploadZone workspaceId={id} onUploadComplete={fetchDocuments} />
-          <DocumentList
-            documents={documents}
-            onDelete={handleDelete}
-            onProcess={handleProcess}
-            onViewChunks={setSelectedChunkDocId}
-            processingId={isProcessing}
-          />
-        </div>
-
-        <div className={`${activeTab === "chat" ? "block" : "hidden xl:block"} min-h-[calc(100svh-13rem)]`}>
-          <ChatPanel workspaceId={id} hasProcessedDocs={hasProcessedDocs} />
+          <section className={`${activeTab === "chat" ? "flex" : "hidden xl:flex"} min-h-0`}>
+            <ChatPanel workspaceId={id} hasProcessedDocs={hasProcessedDocs} />
+          </section>
         </div>
       </section>
 
       {selectedChunkDocId && <ChunkPreviewModal documentId={selectedChunkDocId} onClose={() => setSelectedChunkDocId(null)} />}
-    </div>
+    </main>
   );
 }

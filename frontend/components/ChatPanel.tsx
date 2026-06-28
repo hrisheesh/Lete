@@ -173,7 +173,7 @@ function parseMarkdownBlocks(content: string): MarkdownBlock[] {
     }
 
     const bullet = trimmed.match(/^[-*]\s+(.+)$/);
-    const numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
+    const numbered = trimmed.match(/^\d+\.\s+(.+)$/);
     if (bullet || numbered) {
       flushParagraph();
       const nextOrdered = Boolean(numbered);
@@ -197,7 +197,7 @@ function FormattedMessage({ content, citations }: { content: string; citations?:
   const blocks = parseMarkdownBlocks(content);
 
   return (
-    <div className="space-y-4 text-[15px] font-medium leading-7 text-slate">
+    <div className="space-y-3 text-[15px] font-medium leading-7 text-slate">
       {blocks.map((block, index) => {
         if (block.type === "heading") {
           return (
@@ -314,33 +314,41 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
+        for (const event of events) {
+          const eventType = event.split("\n").find((line) => line.startsWith("event:"))?.replace("event:", "").trim();
+          const dataLine = event.split("\n").find((line) => line.startsWith("data:"));
+          if (!dataLine) continue;
+
           try {
-            const event = JSON.parse(line);
-            if (event.type === "token") {
+            const data = JSON.parse(dataLine.replace("data:", "").trim());
+
+            if (eventType === "metadata" && Array.isArray(data.citations)) {
+              citations = data.citations;
               setMessages((prev) => {
                 const next = [...prev];
                 const last = next[next.length - 1];
-                if (last?.role === "assistant") last.content += event.content;
+                if (last?.role === "assistant") {
+                  next[next.length - 1] = { ...last, citations };
+                }
                 return next;
               });
-            } else if (event.type === "citations") {
-              citations = event.citations;
-              setMessages((prev) => {
-                const next = [...prev];
-                const last = next[next.length - 1];
-                if (last?.role === "assistant") last.citations = citations;
-                return next;
-              });
-            } else if (event.type === "error") {
-              throw new Error(event.message);
             }
-          } catch (parseError) {
-            console.error("Stream parse error:", parseError, line);
+
+            if (eventType === "content" && typeof data.text === "string") {
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last?.role === "assistant") {
+                  next[next.length - 1] = { ...last, content: last.content + data.text, citations };
+                }
+                return next;
+              });
+            }
+          } catch {
+            // Ignore malformed SSE fragments.
           }
         }
       }
@@ -349,8 +357,7 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
         const next = [...prev];
         const last = next[next.length - 1];
         if (last?.role === "assistant") {
-          last.isStreaming = false;
-          last.citations = citations;
+          next[next.length - 1] = { ...last, isStreaming: false, citations };
         }
         return next;
       });
@@ -360,9 +367,12 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
         const next = [...prev];
         const last = next[next.length - 1];
         if (last?.role === "assistant") {
-          last.isStreaming = false;
-          last.error = getErrorMessage(error);
-          last.content = last.content || "I could not complete that response.";
+          next[next.length - 1] = {
+            ...last,
+            isStreaming: false,
+            error: getErrorMessage(error),
+            content: last.content || "I could not complete that response.",
+          };
         }
         return next;
       });
@@ -375,19 +385,32 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
   const stopStreaming = () => {
     abortControllerRef.current?.abort();
     setIsLoading(false);
+    setMessages((prev) => {
+      const next = [...prev];
+      const last = next[next.length - 1];
+      if (last?.role === "assistant") next[next.length - 1] = { ...last, isStreaming: false };
+      return next;
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
   return (
-    <div className="premium-panel flex h-[calc(100svh-13rem)] min-h-[34rem] flex-col overflow-hidden rounded-[2rem]">
-      <div className="flex items-center justify-between border-b border-hairline-soft bg-white/70 px-4 py-4 sm:px-5">
+    <div className="premium-panel flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.5rem]">
+      <div className="flex shrink-0 items-center justify-between border-b border-hairline-soft bg-white/70 px-4 py-3 sm:px-5">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-stone">Grounded chat</p>
-          <h2 className="mt-1 text-xl font-bold tracking-tight text-ink">Ask your workspace</h2>
+          <h2 className="mt-0.5 text-lg font-bold tracking-tight text-ink">Ask your workspace</h2>
         </div>
         <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-on-primary">{hasProcessedDocs ? "Ready" : "Needs docs"}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-5">
+      <div className="internal-scroll min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
         {messages.length === 0 ? (
           <EmptyState hasProcessedDocs={hasProcessedDocs} />
         ) : (
@@ -413,8 +436,15 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
                       <p className="whitespace-pre-wrap text-sm font-semibold leading-6">{message.content}</p>
                     ) : (
                       <>
-                        <FormattedMessage content={message.content} citations={message.citations} />
-                        {message.isStreaming && <StreamingCursor />}
+                        {message.content ? <FormattedMessage content={message.content} citations={message.citations} /> : null}
+                        {message.isStreaming && !message.content && (
+                          <div className="flex items-center gap-1 py-2">
+                            <span className="size-2 animate-bounce rounded-full bg-steel [animation-delay:0ms]" />
+                            <span className="size-2 animate-bounce rounded-full bg-steel [animation-delay:150ms]" />
+                            <span className="size-2 animate-bounce rounded-full bg-steel [animation-delay:300ms]" />
+                          </div>
+                        )}
+                        {message.isStreaming && message.content && <StreamingCursor />}
                         {message.error && <p className="mt-3 rounded-xl bg-brand-coral/10 px-3 py-2 text-sm font-bold text-brand-coral">{message.error}</p>}
                       </>
                     )}
@@ -433,39 +463,37 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
         )}
       </div>
 
-      <div className="border-t border-hairline-soft bg-white/76 p-3 sm:p-4">
-        <div className="flex items-end gap-2 rounded-[1.5rem] border border-hairline bg-canvas p-2 shadow-[0_14px_40px_rgba(17,17,17,0.05)]">
+      <div className="shrink-0 border-t border-hairline-soft bg-white/80 p-3 sm:p-4">
+        <div
+          className={`flex items-end gap-3 rounded-[1.25rem] border bg-surface px-3 py-3 transition duration-200 ${
+            hasProcessedDocs ? "border-hairline-soft focus-within:border-ink" : "border-hairline-soft opacity-60"
+          }`}
+        >
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder={hasProcessedDocs ? "Ask about your documents..." : "Process a document before chatting"}
+            onKeyDown={handleKeyDown}
+            placeholder={hasProcessedDocs ? "Ask a question..." : "Process at least one document to enable chat"}
             disabled={!hasProcessedDocs || isLoading}
             rows={1}
-            className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-3 py-3 text-base font-medium leading-6 text-ink placeholder:text-muted disabled:cursor-not-allowed"
+            className="max-h-40 min-h-9 flex-1 resize-none overflow-y-auto bg-transparent py-2 text-sm font-semibold leading-6 text-ink outline-none placeholder:text-steel disabled:cursor-not-allowed"
           />
+
           {isLoading ? (
             <button
               onClick={stopStreaming}
-              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-coral text-white transition duration-200 ease-out hover:-translate-y-0.5"
-              aria-label="Stop response"
-              title="Stop response"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal"
+              title="Stop generating"
             >
-              <Square size={16} />
+              <Square size={15} fill="currentColor" />
             </button>
           ) : (
             <button
               onClick={sendMessage}
               disabled={!input.trim() || !hasProcessedDocs}
-              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:bg-hairline disabled:text-muted"
-              aria-label="Send message"
-              title="Send message"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:opacity-30"
+              title="Send"
             >
               <Send size={17} />
             </button>

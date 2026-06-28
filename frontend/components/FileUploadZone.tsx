@@ -74,31 +74,33 @@ export default function FileUploadZone({ workspaceId, onUploadComplete }: FileUp
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`relative overflow-hidden rounded-[2rem] border p-5 transition duration-300 ease-out sm:p-6 ${
+      className={`shrink-0 overflow-hidden rounded-[1.5rem] border p-4 transition duration-200 ease-out sm:p-5 ${
         isDragging
-          ? "border-brand-blue bg-brand-blue/8 shadow-[0_22px_70px_rgba(20,86,240,0.14)]"
-          : "border-hairline-soft bg-primary text-on-primary shadow-[0_24px_80px_rgba(17,17,17,0.18)]"
+          ? "border-brand-blue bg-brand-blue/8 shadow-[0_20px_54px_rgba(20,86,240,0.12)]"
+          : "border-transparent bg-primary text-on-primary shadow-[0_20px_64px_rgba(17,17,17,0.16)]"
       }`}
     >
-      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
 
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className={`mb-5 flex size-12 items-center justify-center rounded-full ${isDragging ? "bg-brand-blue text-white" : "bg-white/12 text-white"}`}>
-            <FileUp size={22} />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className={`flex size-10 shrink-0 items-center justify-center rounded-full ${isDragging ? "bg-brand-blue text-white" : "bg-white/12 text-white"}`}>
+            <FileUp size={19} />
           </div>
-          <h2 className={`text-2xl font-bold tracking-tight ${isDragging ? "text-ink" : "text-white"}`}>Drop documents here</h2>
-          <p className={`mt-2 max-w-md text-sm font-semibold leading-6 ${isDragging ? "text-steel" : "text-white/62"}`}>
-            Upload PDFs, CSVs, and text files into this workspace.
-          </p>
-          {error && <p className="mt-4 rounded-2xl bg-brand-coral/15 px-4 py-3 text-sm font-bold text-brand-coral">{error}</p>}
+          <div className="min-w-0">
+            <h2 className={`truncate text-xl font-bold tracking-tight ${isDragging ? "text-ink" : "text-white"}`}>Drop documents here</h2>
+            <p className={`mt-1.5 text-sm font-semibold leading-6 ${isDragging ? "text-steel" : "text-white/62"}`}>
+              Upload PDFs, CSVs, and text files into this workspace.
+            </p>
+            {error && <p className="mt-3 rounded-2xl bg-brand-coral/15 px-4 py-3 text-sm font-bold text-brand-coral">{error}</p>}
+          </div>
         </div>
 
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
-          className={`inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition duration-200 ease-out hover:-translate-y-0.5 disabled:opacity-60 ${
+          className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition duration-200 ease-out hover:-translate-y-0.5 disabled:opacity-60 ${
             isDragging ? "bg-primary text-on-primary" : "bg-white text-primary hover:bg-surface"
           }`}
         >
