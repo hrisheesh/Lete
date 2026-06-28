@@ -5,7 +5,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import "katex/dist/katex.min.css"; // Note: ensure this exists or is loaded in layout
 
 import dynamic from "next/dynamic";
@@ -13,20 +12,6 @@ import RichCodeBlock from "./RichCodeBlock";
 import RichChart from "./RichChart";
 
 const RichMermaid = dynamic(() => import("./RichMermaid"), { ssr: false });
-
-// Custom schema to allow specific classes and math
-const markdownSchema = {
-  ...defaultSchema,
-  attributes: {
-    ...defaultSchema.attributes,
-    code: [...(defaultSchema.attributes?.code ?? []), ["className"]],
-    span: [...(defaultSchema.attributes?.span ?? []), ["className"]],
-    div: [...(defaultSchema.attributes?.div ?? []), ["className"]],
-    input: [["type"], ["checked"], ["disabled"]],
-  },
-  // Ensure math nodes are not stripped
-  tagNames: [...(defaultSchema.tagNames || []), "span", "div", "math", "mi", "mn", "mo", "ms", "mspace", "mtext", "merror", "mfrac", "mpadded", "mphantom", "mroot", "mrow", "msqrt", "mstyle", "mmultiscripts", "munder", "mover", "munderover", "mtable", "mtr", "mtd", "annotation", "semantics"],
-};
 
 import { Citation } from "@/types/api";
 
@@ -129,7 +114,7 @@ export default function RichMarkdown({
     <div className="chat-markdown text-[15px] font-medium leading-7 text-charcoal">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex, [rehypeSanitize, markdownSchema]]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           // Typography
           h1: ({ children }) => (

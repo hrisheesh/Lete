@@ -5,9 +5,60 @@ import RichMarkdown from "@/components/markdown/RichMarkdown";
 import { Bot } from "lucide-react";
 
 export default function MarkdownPlayground() {
-  const [markdown, setMarkdown] = useState<string>(`# SOTA Markdown Renderer Test
+  const [markdown, setMarkdown] = useState<string>(`# Rich Markdown Renderer Test
 
 ## 1. Native Charts (Recharts)
+
+### Area Chart (Smooth Gradients)
+\`\`\`chart
+{
+  "type": "area",
+  "title": "Server Load Distribution",
+  "data": [
+    { "name": "00:00", "cpu": 20, "ram": 40 },
+    { "name": "04:00", "cpu": 30, "ram": 45 },
+    { "name": "08:00", "cpu": 80, "ram": 75 },
+    { "name": "12:00", "cpu": 95, "ram": 90 },
+    { "name": "16:00", "cpu": 70, "ram": 80 },
+    { "name": "20:00", "cpu": 40, "ram": 55 }
+  ],
+  "keys": ["cpu", "ram"]
+}
+\`\`\`
+
+### Composed Chart (Mixed Data)
+\`\`\`chart
+{
+  "type": "composed",
+  "title": "Revenue vs Margin",
+  "data": [
+    { "name": "Q1", "revenue": 4000, "margin": 2400 },
+    { "name": "Q2", "revenue": 3000, "margin": 1398 },
+    { "name": "Q3", "revenue": 2000, "margin": 9800 },
+    { "name": "Q4", "revenue": 2780, "margin": 3908 }
+  ],
+  "bars": ["revenue"],
+  "lines": ["margin"]
+}
+\`\`\`
+
+### Radar Chart (Multi-Variable Analysis)
+\`\`\`chart
+{
+  "type": "radar",
+  "title": "Developer Skill Profile",
+  "data": [
+    { "name": "React", "score": 90 },
+    { "name": "Python", "score": 85 },
+    { "name": "SQL", "score": 70 },
+    { "name": "CSS", "score": 95 },
+    { "name": "Docker", "score": 60 }
+  ],
+  "keys": ["score"]
+}
+\`\`\`
+
+### Bar Chart
 \`\`\`chart
 {
   "type": "bar",
@@ -23,12 +74,32 @@ export default function MarkdownPlayground() {
 \`\`\`
 
 ## 2. Mermaid Diagrams
+
+### Flowchart
 \`\`\`mermaid
 flowchart TD
   subgraph PreTrainingPhase ["Pre-Training Phase: Core Knowledge Building"]
     direction TB
     A["Large Raw Text Corpus Input"] --> B["Tokenization: Split text into subword token units"]
+    B --> C["Token Embedding: Convert tokens to numerical vectors"]
   end
+\`\`\`
+
+### Sequence Diagram
+\`\`\`mermaid
+sequenceDiagram
+    Alice->>+John: Hello John, how are you?
+    Alice->>+John: John, can you hear me?
+    John-->>-Alice: Hi Alice, I can hear you!
+    John-->>-Alice: I feel great!
+\`\`\`
+
+### Pie Chart
+\`\`\`mermaid
+pie title Pets adopted by volunteers
+    "Dogs" : 386
+    "Cats" : 85
+    "Rats" : 15
 \`\`\`
 
 ## 3. Mathematical Equations (KaTeX)
@@ -51,7 +122,7 @@ def calculate_fibonacci(n):
 \`\`\`
 
 ## 5. Enterprise Tables
-| Feature | Old Renderer | SOTA Renderer |
+| Feature | Old Renderer | Rich Renderer |
 | :--- | :--- | :--- |
 | **Code Blocks** | Basic | Prism IDE Theme with Copy |
 | **Charts** | None | Native Recharts |

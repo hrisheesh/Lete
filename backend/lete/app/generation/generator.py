@@ -129,7 +129,7 @@ class GenerationService:
                 f"Draw from the Context first (citing with [N]). If using general knowledge, state that explicitly. "
                 f"Always fulfill requests for diagrams or charts. "
                 f"1. For MERMAID: Use ```mermaid and wrap node text in double quotes (A[\"Node\"]). NEVER use spaces in subgraph IDs.\n"
-                f"2. For CHARTS (bar/line/pie): Use ```chart and output VALID JSON like this: {{\"type\": \"bar\", \"title\": \"Title\", \"data\": [{{\"name\": \"A\", \"value\": 100}}], \"keys\": [\"value\"]}}\n"
+                f"2. For CHARTS: Use ```chart and output VALID JSON like this: {{\"type\": \"bar|line|pie|area|radar|composed\", \"title\": \"Title\", \"data\": [{{\"name\": \"A\", \"value\": 100}}], \"keys\": [\"value\"]}}\n"
             )
             for chunk in provider.generate_stream(final_prompt, model, system_prompt=system_prompt):
                 full_text += chunk
