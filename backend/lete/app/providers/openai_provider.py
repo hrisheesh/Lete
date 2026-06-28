@@ -13,3 +13,19 @@ class OpenAIProvider(LLMProvider):
         except Exception as e:
             print(f"OpenAI connection failed: {e}")
             return False
+
+    def generate_stream(self, prompt: str, model: str, system_prompt: str = None):
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        
+        response = self.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            stream=True
+        )
+        
+        for chunk in response:
+            if chunk.choices[0].delta.content is not None:
+                yield chunk.choices[0].delta.content

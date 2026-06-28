@@ -188,6 +188,35 @@ def bootstrap_db():
     """)
     conn.commit()
     
+    # Create queries table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS queries (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            query_text TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Create answer_runs table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS answer_runs (
+            id TEXT PRIMARY KEY,
+            query_id TEXT NOT NULL,
+            retrieval_run_id TEXT,
+            answer_text TEXT,
+            model_used TEXT,
+            prompt_tokens INTEGER,
+            completion_tokens INTEGER,
+            total_tokens INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (query_id) REFERENCES queries(id) ON DELETE CASCADE,
+            FOREIGN KEY (retrieval_run_id) REFERENCES retrieval_runs(id) ON DELETE SET NULL
+        )
+    """)
+    conn.commit()
+    
     # Create Indices for performance on foreign keys
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_workspace_id ON documents(workspace_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_document_id ON processing_jobs(document_id)")

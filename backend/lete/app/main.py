@@ -31,3 +31,7 @@ from lete.app.api.retrieval import router as retrieval_router
 app.include_router(
     retrieval_router, prefix=f"{settings.api_v1_str}", tags=["retrieval"]
 )
+from lete.app.api.queries import router as queries_router
+app.include_router(
+    queries_router, prefix=f"{settings.api_v1_str}", tags=["queries"]
+)
