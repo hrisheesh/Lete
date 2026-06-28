@@ -77,14 +77,25 @@ class EmbeddingRepository:
         )
         
     def delete_chunk_embeddings(self, chunk_ids: List[str]) -> None:
-        """Delete embeddings for a set of chunks from all dynamic sqlite-vec tables."""
+        """Delete embeddings for a set of chunks from all dynamic sqlite-vec virtual tables.
+        
+        CRITICAL: Must query ONLY virtual tables (sql LIKE 'CREATE VIRTUAL TABLE%').
+        sqlite-vec creates 5+ shadow tables for each virtual table, all with type='table'
+        and names like 'chunk_embeddings_N_chunks', 'chunk_embeddings_N_rowids', etc.
+        Attempting to DELETE from those internal tables with WHERE chunk_id breaks because
+        their internal schemas differ. DELETE must go through the virtual table interface.
+        """
         if not chunk_ids:
             return
             
         cursor = self.conn.cursor()
         
-        # Find all dynamic chunk_embeddings_* tables
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'chunk_embeddings_%'")
+        # Filter strictly to virtual table entries only — sql starts with 'CREATE VIRTUAL TABLE'
+        cursor.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type='table' AND name LIKE 'chunk_embeddings_%' "
+            "AND sql LIKE 'CREATE VIRTUAL TABLE%'"
+        )
         tables = [row['name'] for row in cursor.fetchall()]
         
         if not tables:
@@ -92,6 +103,7 @@ class EmbeddingRepository:
             
         placeholders = ",".join(["?"] * len(chunk_ids))
         for table in tables:
+            # Delete via the virtual table — sqlite-vec handles all shadow table cleanup
             cursor.execute(
                 f"DELETE FROM {table} WHERE chunk_id IN ({placeholders})",
                 chunk_ids

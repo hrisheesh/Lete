@@ -21,8 +21,13 @@ class VectorSearchService:
         
         cursor = self.conn.cursor()
         
-        # Check if this dimension table exists before querying
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name = ?", (table_name,))
+        # Check if this dimension *virtual* table exists before querying.
+        # Must filter by sql to exclude shadow tables (e.g. chunk_embeddings_N_chunks)
+        # which also appear as type='table' in sqlite_master.
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = ? AND sql LIKE 'CREATE VIRTUAL TABLE%'",
+            (table_name,)
+        )
         if not cursor.fetchone():
             return []
             
