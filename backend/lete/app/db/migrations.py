@@ -105,14 +105,9 @@ def bootstrap_db():
         )
     """)
     
-    # Create chunk_embeddings vec0 virtual table
-    # We use +chunk_id to store auxiliary TEXT identifier. Fixed to 1536 dimensions (OpenAI standard)
-    cursor.execute("""
-        CREATE VIRTUAL TABLE IF NOT EXISTS chunk_embeddings USING vec0(
-            +chunk_id TEXT,
-            embedding float[1536]
-        )
-    """)
+    # Drop the legacy static 1536-dimensional table if it exists.
+    # Dynamic tables will now be created per-dimension as `chunk_embeddings_{dim}`.
+    cursor.execute("DROP TABLE IF EXISTS chunk_embeddings")
     
     # Check if chunks_fts is stale (missing contextual_header)
     cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='chunks_fts'")

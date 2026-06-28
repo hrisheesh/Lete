@@ -44,32 +44,55 @@ class EmbeddingRepository:
         )
 
     def store_chunk_embeddings(self, chunk_id_to_embedding: Dict[str, bytes]) -> None:
-        """Store embeddings in the sqlite-vec virtual table for vector search."""
+        """Store embeddings in dynamically provisioned sqlite-vec virtual tables based on their dimension."""
         if not chunk_id_to_embedding:
             return
             
+        # Determine dimension from the first embedding (4 bytes per float32)
+        sample_embedding = next(iter(chunk_id_to_embedding.values()))
+        dimension = len(sample_embedding) // 4
+        table_name = f"chunk_embeddings_{dimension}"
+        
         cursor = self.conn.cursor()
+        
+        # Ensure the table for this dimension exists
+        cursor.execute(f"""
+            CREATE VIRTUAL TABLE IF NOT EXISTS {table_name} USING vec0(
+                +chunk_id TEXT,
+                embedding float[{dimension}]
+            )
+        """)
+        
         records = [
             (chunk_id, embedding) 
             for chunk_id, embedding in chunk_id_to_embedding.items()
         ]
         
         cursor.executemany(
-            """
-            INSERT INTO chunk_embeddings(chunk_id, embedding) 
+            f"""
+            INSERT INTO {table_name}(chunk_id, embedding) 
             VALUES (?, ?)
             """,
             records
         )
         
     def delete_chunk_embeddings(self, chunk_ids: List[str]) -> None:
-        """Delete embeddings for a set of chunks from sqlite-vec."""
+        """Delete embeddings for a set of chunks from all dynamic sqlite-vec tables."""
         if not chunk_ids:
             return
             
-        placeholders = ",".join(["?"] * len(chunk_ids))
         cursor = self.conn.cursor()
-        cursor.execute(
-            f"DELETE FROM chunk_embeddings WHERE chunk_id IN ({placeholders})",
-            chunk_ids
-        )
+        
+        # Find all dynamic chunk_embeddings_* tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'chunk_embeddings_%'")
+        tables = [row['name'] for row in cursor.fetchall()]
+        
+        if not tables:
+            return
+            
+        placeholders = ",".join(["?"] * len(chunk_ids))
+        for table in tables:
+            cursor.execute(
+                f"DELETE FROM {table} WHERE chunk_id IN ({placeholders})",
+                chunk_ids
+            )

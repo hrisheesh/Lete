@@ -16,14 +16,22 @@ class VectorSearchService:
             return []
             
         query_bytes = sqlite_vec.serialize_float32(query_embedding)
+        dimension = len(query_embedding)
+        table_name = f"chunk_embeddings_{dimension}"
+        
         cursor = self.conn.cursor()
         
+        # Check if this dimension table exists before querying
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name = ?", (table_name,))
+        if not cursor.fetchone():
+            return []
+            
         # Step 1: Query the vector table for a large pool (to account for cross-workspace noise)
         pool_size = max(100, limit * 10)
         cursor.execute(
-            """
+            f"""
             SELECT chunk_id, distance
-            FROM chunk_embeddings
+            FROM {table_name}
             WHERE embedding MATCH ? AND k = ?
             ORDER BY distance
             """,
