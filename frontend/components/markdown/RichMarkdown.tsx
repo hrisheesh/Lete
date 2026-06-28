@@ -162,7 +162,7 @@ export default function RichMarkdown({
             </p>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="my-5 rounded-r-2xl border-l-4 border-brand-blue bg-brand-blue/5 px-5 py-4 text-[0.95em] font-semibold text-slate">
+            <blockquote className="my-6 border-l-2 border-brand-blue/40 pl-5 text-[0.95em] italic leading-relaxed text-slate/90">
               {children}
             </blockquote>
           ),
@@ -200,16 +200,16 @@ export default function RichMarkdown({
 
           // Tables
           table: ({ children }) => (
-            <div className="internal-scroll my-6 max-w-full overflow-x-auto rounded-xl border border-hairline bg-white shadow-sm">
+            <div className="internal-scroll my-6 max-w-full overflow-x-auto rounded-xl border border-hairline bg-white shadow-sm transition-all duration-500 hover:-translate-y-[1px] hover:shadow-md">
               <table className="w-full min-w-[40rem] border-collapse text-left text-sm">{children}</table>
             </div>
           ),
-          thead: ({ children }) => <thead className="bg-stone border-b border-hairline-soft font-bold text-ink">{children}</thead>,
+          thead: ({ children }) => <thead className="bg-stone/30 border-b border-hairline font-bold text-ink">{children}</thead>,
           tbody: ({ children }) => <tbody className="divide-y divide-hairline-soft bg-white">{children}</tbody>,
-          tr: ({ children }) => <tr className="transition-colors hover:bg-stone/30">{children}</tr>,
-          th: ({ children }) => <th className="px-5 py-3.5 font-bold">{children}</th>,
+          tr: ({ children }) => <tr className="transition-colors duration-300 ease-out hover:bg-black/[0.02]">{children}</tr>,
+          th: ({ children }) => <th className="px-5 py-4 font-bold">{children}</th>,
           td: ({ children }) => (
-            <td className="px-5 py-3.5 align-top text-charcoal">
+            <td className="px-5 py-4 align-top text-charcoal">
               <InlineWithCitations citations={citations}>{children}</InlineWithCitations>
             </td>
           ),
@@ -220,7 +220,7 @@ export default function RichMarkdown({
               href={href}
               target="_blank"
               rel="noreferrer"
-              className="font-bold text-brand-blue-deep underline decoration-brand-blue-deep/30 underline-offset-4 transition-colors hover:decoration-brand-blue-deep"
+              className="font-semibold text-brand-blue underline decoration-brand-blue/30 underline-offset-4 transition-all duration-300 hover:text-brand-blue-deep hover:decoration-brand-blue/80"
             >
               <InlineWithCitations citations={citations}>{children}</InlineWithCitations>
             </a>

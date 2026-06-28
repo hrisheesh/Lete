@@ -284,10 +284,10 @@ export default function RichChart({ configStr }: { configStr: string }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="my-6 w-full rounded-2xl border border-hairline bg-white p-6 pb-2 shadow-[0_12px_36px_rgba(38,31,27,0.04)] transition-shadow hover:shadow-[0_18px_48px_rgba(38,31,27,0.08)]"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+      className="my-6 w-full rounded-2xl border border-hairline bg-white p-6 pb-2 shadow-sm transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-xl"
     >
       {title && <h3 className="mb-6 px-2 text-center text-[13px] font-black uppercase tracking-widest text-ink">{title}</h3>}
       {renderChart()}

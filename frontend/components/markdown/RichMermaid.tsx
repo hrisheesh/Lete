@@ -103,14 +103,14 @@ export default function RichMermaid({ chart }: { chart: string }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="internal-scroll my-6 max-h-[32rem] overflow-auto rounded-2xl border border-hairline bg-white p-6 shadow-[0_14px_32px_rgba(38,31,27,0.04)] transition-all hover:shadow-[0_24px_56px_rgba(38,31,27,0.08)] [&_svg_path]:transition-all [&_svg_path]:duration-300 hover:[&_svg_.node_rect]:fill-brand-blue/5 hover:[&_svg_.node_rect]:stroke-brand-blue"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+      className="internal-scroll my-6 max-h-[32rem] overflow-auto rounded-2xl border border-hairline bg-white p-6 shadow-sm transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-xl [&_svg_path]:transition-all [&_svg_path]:duration-300 hover:[&_svg_.node_rect]:fill-brand-blue/5 hover:[&_svg_.node_rect]:stroke-brand-blue"
     >
       <div ref={renderHostRef} className="absolute -left-[9999px] -top-[9999px] opacity-0" aria-hidden="true" />
       <div
-        className="mx-auto flex w-full min-w-max justify-center [&_svg]:h-auto [&_svg]:max-h-[28rem] [&_svg]:w-full [&_svg]:max-w-none"
+        className="flex w-full justify-center [&_svg]:h-auto [&_svg]:max-h-[28rem] [&_svg]:min-w-fit"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     </motion.div>
