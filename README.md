@@ -60,6 +60,14 @@ Parsed chunks are embedded using the `BAAI/bge-m3` model, highly regarded for it
 ### 4. Deterministic Inline Citations
 Lete parses the context matrix to force the chosen LLM to ground its outputs. Generated responses include verifiable inline citations that link directly to the exact text chunks in the frontend UI.
 
+### 5. Advanced Markdown & Media Rendering
+The frontend includes a highly customized rendering engine built to display complex research outputs flawlessly. It natively supports:
+- **GitHub Flavored Markdown (GFM):** Tables, task lists, and advanced text formatting.
+- **Syntax Highlighting:** Fully themed code blocks for multiple programming languages.
+- **Mermaid Diagrams:** Dynamic, interactive flowcharts, sequence diagrams, and architecture graphs rendered directly in the chat.
+- **Mathematical Typography:** Full LaTeX support for inline and block equations.
+- **Interactive Citations:** Source badges that immediately jump to the original document chunk upon clicking.
+
 ---
 
 ## 🛠️ Installation & Setup
