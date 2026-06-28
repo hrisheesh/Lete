@@ -65,3 +65,24 @@ def delete_chat(
     if cursor.rowcount == 0:
         raise HTTPException(status_code=404, detail="Chat not found")
     conn.commit()
+
+@router.put("/workspaces/{workspace_id}/chats/{chat_id}", response_model=ChatResponse)
+def update_chat(
+    workspace_id: str,
+    chat_id: str,
+    chat_in: ChatCreate,
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    now = datetime.utcnow().isoformat()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE chats SET name = ?, updated_at = ? WHERE id = ? AND workspace_id = ?",
+        (chat_in.name, now, chat_id, workspace_id)
+    )
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    conn.commit()
+    
+    cursor.execute("SELECT * FROM chats WHERE id = ?", (chat_id,))
+    row = cursor.fetchone()
+    return ChatResponse(**dict(row))
