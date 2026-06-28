@@ -1,15 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from lete.app.db.migrations import bootstrap_db
 from lete.app.api.health import router as health_router
 from lete.app.api.workspaces import router as workspaces_router
 from lete.app.config.settings import settings
 
-app = FastAPI(title=settings.project_name)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run database migrations on startup
+    bootstrap_db()
+    yield
+
+app = FastAPI(title=settings.project_name, lifespan=lifespan)
 
 # CORS configuration to allow frontend to communicate
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
