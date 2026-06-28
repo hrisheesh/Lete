@@ -106,6 +106,6 @@ export default function RichMermaid({ chart }: { chart: string }) {
         className="mx-auto flex w-full min-w-max justify-center [&_svg]:h-auto [&_svg]:max-h-[28rem] [&_svg]:w-full [&_svg]:max-w-none"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
-    </div>
+    </motion.div>
   );
 }
