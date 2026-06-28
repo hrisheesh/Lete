@@ -124,15 +124,14 @@ def run_processing_pipeline(job_id: str, document_id: str):
     section_repo = DocumentSectionRepository(conn)
     chunk_repo = ChunkRepository(conn)
     
-    doc = doc_repo.get(document_id)
-    if not doc:
-        conn.close()
-        return
-        
-    file_path = os.path.join(UPLOAD_DIR, doc.workspace_id, doc.file_hash)
-    ext = doc.filename.split('.')[-1].lower() if '.' in doc.filename else 'txt'
-    
     try:
+        doc = doc_repo.get(document_id)
+        if not doc:
+            return
+            
+        file_path = os.path.join(UPLOAD_DIR, doc.workspace_id, doc.file_hash)
+        ext = doc.filename.split('.')[-1].lower() if '.' in doc.filename else 'txt'
+        
         # Phase 1: Parse sections
         parser = ParserRegistry.get_parser(ext)
         sections = parser.parse(file_path, document_id)

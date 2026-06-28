@@ -49,8 +49,11 @@ export default function WorkspaceDashboard() {
       if (res.ok) {
         setDocuments(await res.json());
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      // Ignore network fetch errors during polling to prevent console spam
+      if (e.name !== 'TypeError' || e.message !== 'Failed to fetch') {
+        console.error(e);
+      }
     }
   };
 
