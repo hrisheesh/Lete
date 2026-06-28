@@ -31,21 +31,14 @@ class GenerationService:
         Executes hybrid search, packs context, and returns a generator that yields the answer chunks.
         """
         # Fetch current LLM settings
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT id FROM provider_settings ORDER BY created_at DESC LIMIT 1")
-        row = cursor.fetchone()
+        from lete.app.api.settings import get_settings
         
-        if row:
-            provider_config = self.settings_repo.get(row["id"])
-            provider_type = provider_config.provider_type
-            base_url = provider_config.base_url
-            api_key = provider_config.api_key
-            model = provider_config.model_name
-        else:
-            provider_type = settings.provider_type
-            base_url = settings.base_url
-            api_key = settings.api_key
-            model = settings.model_name
+        provider_config = get_settings(self.conn)
+        provider_type = provider_config.provider_type
+        base_url = provider_config.base_url
+        api_key = provider_config.api_key
+        model = provider_config.model_name
+            
             
         provider = self._get_provider(provider_type, base_url, api_key)
         

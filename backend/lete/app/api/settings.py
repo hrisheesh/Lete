@@ -23,20 +23,44 @@ def get_settings(conn: sqlite3.Connection = Depends(get_db_connection)):
     row = cursor.fetchone()
     
     if not row:
-        # Fallback to .env configuration if database is empty
-        return ProviderSettingsResponse(
-            id=str(uuid.uuid4()),
-            provider_type=settings.provider_type,
-            base_url=settings.base_url,
-            api_key=settings.api_key,
-            model_name=settings.model_name,
-            embedding_model_name=settings.embedding_model_name,
-            created_at=datetime.utcnow().isoformat(),
-            updated_at=datetime.utcnow().isoformat()
-        )
-        
-    repo = ProviderSettingsRepository(conn)
-    return repo.get(row["id"])
+        prov_type = settings.provider_type
+        base = settings.base_url
+        key = settings.api_key
+        mod = settings.model_name
+        embed_mod = settings.embedding_model_name
+        created = updated = datetime.utcnow().isoformat()
+        db_id = str(uuid.uuid4())
+    else:
+        repo = ProviderSettingsRepository(conn)
+        db_settings = repo.get(row["id"])
+        prov_type = db_settings.provider_type
+        base = db_settings.base_url
+        key = db_settings.api_key
+        mod = db_settings.model_name
+        embed_mod = db_settings.embedding_model_name
+        created = db_settings.created_at
+        updated = db_settings.updated_at
+        db_id = db_settings.id
+
+    # Fallback to env-defaults if fields are missing
+    defaults = get_env_defaults().get(prov_type, {})
+    if not key and defaults.get("api_key"):
+        key = defaults.get("api_key")
+    if not mod and defaults.get("model_name"):
+        mod = defaults.get("model_name")
+    if not embed_mod and defaults.get("embedding_model_name"):
+        embed_mod = defaults.get("embedding_model_name")
+
+    return ProviderSettingsResponse(
+        id=db_id,
+        provider_type=prov_type,
+        base_url=base,
+        api_key=key,
+        model_name=mod,
+        embedding_model_name=embed_mod,
+        created_at=created,
+        updated_at=updated
+    )
 
 @router.get("/env-defaults")
 def get_env_defaults():
