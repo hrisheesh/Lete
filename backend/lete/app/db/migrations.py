@@ -191,16 +191,60 @@ def bootstrap_db():
     """)
     conn.commit()
     
+    # Create chats table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chats (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        )
+    """)
+    conn.commit()
+
     # Create queries table
+    # Create queries table (with chat_id)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS queries (
             id TEXT PRIMARY KEY,
             workspace_id TEXT NOT NULL,
+            chat_id TEXT,
             query_text TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+            FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
         )
     """)
+    
+    # Add chat_id to existing queries if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE queries ADD COLUMN chat_id TEXT REFERENCES chats(id) ON DELETE CASCADE")
+    except Exception:
+        pass # Column already exists
+    conn.commit()
+
+    # Migrate existing queries that don't have a chat_id
+    cursor.execute("SELECT DISTINCT workspace_id FROM queries WHERE chat_id IS NULL")
+    workspaces_with_unassigned_queries = cursor.fetchall()
+    
+    import uuid
+    for ws_row in workspaces_with_unassigned_queries:
+        ws_id = ws_row[0]
+        # Create a default "Main Chat"
+        default_chat_id = str(uuid.uuid4())
+        cursor.execute(
+            "INSERT INTO chats (id, workspace_id, name) VALUES (?, ?, ?)",
+            (default_chat_id, ws_id, "Main Chat")
+        )
+        # Assign existing queries to this chat
+        cursor.execute(
+            "UPDATE queries SET chat_id = ? WHERE workspace_id = ? AND chat_id IS NULL",
+            (default_chat_id, ws_id)
+        )
+    conn.commit()
+
 
     # Create answer_runs table
     cursor.execute("""

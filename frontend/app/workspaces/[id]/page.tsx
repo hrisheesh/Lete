@@ -8,6 +8,7 @@ import FileUploadZone from "@/components/FileUploadZone";
 import DocumentList from "@/components/DocumentList";
 import ChunkPreviewModal from "@/components/ChunkPreviewModal";
 import ChatPanel from "@/components/ChatPanel";
+import ChatSidebar from "@/components/ChatSidebar";
 
 const API_BASE = "http://127.0.0.1:8000/api/v1";
 
@@ -37,6 +38,7 @@ export default function WorkspaceDashboard() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
   const hasProcessedDocs = documents.some((document) => document.status === "processed");
   const processingCount = documents.filter((document) => document.status === "processing").length;
@@ -239,8 +241,15 @@ export default function WorkspaceDashboard() {
             )}
           </section>
 
-          <section className={`${activeTab === "chat" ? "flex" : "hidden xl:flex"} min-h-0 min-w-0`}>
-            <ChatPanel workspaceId={id} hasProcessedDocs={hasProcessedDocs} />
+          <section className={`${activeTab === "chat" ? "flex" : "hidden xl:flex"} min-h-0 min-w-0 soft-panel overflow-hidden rounded-[1.5rem]`}>
+            <ChatSidebar workspaceId={id} activeChatId={activeChatId} onSelectChat={setActiveChatId} />
+            <div className="flex-1">
+              {activeChatId ? (
+                <ChatPanel key={activeChatId} workspaceId={id} chatId={activeChatId} hasProcessedDocs={hasProcessedDocs} />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm font-semibold text-steel">Select or create a chat to begin</div>
+              )}
+            </div>
           </section>
         </div>
       </section>

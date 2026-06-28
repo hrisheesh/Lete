@@ -26,7 +26,7 @@ class GenerationService:
         else:
             raise ValueError(f"Unknown provider type {provider_type}")
 
-    def generate_answer(self, workspace_id: str, query_text: str, query_embedding: List[float] = None) -> Dict[str, Any]:
+    def generate_answer(self, workspace_id: str, chat_id: str, query_text: str, query_embedding: List[float] = None) -> Dict[str, Any]:
         """
         Executes hybrid search, packs context, and returns a generator that yields the answer chunks.
         """
@@ -53,8 +53,8 @@ class GenerationService:
         query_id = str(uuid.uuid4())
         cursor = self.conn.cursor()
         cursor.execute(
-            "INSERT INTO queries (id, workspace_id, query_text) VALUES (?, ?, ?)",
-            (query_id, workspace_id, query_text)
+            "INSERT INTO queries (id, workspace_id, chat_id, query_text) VALUES (?, ?, ?, ?)",
+            (query_id, workspace_id, chat_id, query_text)
         )
         
         # We need to create a retrieval run to tie things together

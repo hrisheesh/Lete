@@ -23,9 +23,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health_router)
+app.include_router(
+    health_router, prefix=f"{settings.api_v1_str}", tags=["health"]
+)
 app.include_router(
     workspaces_router, prefix=f"{settings.api_v1_str}/workspaces", tags=["workspaces"]
+)
+from lete.app.api.chats import router as chats_router
+app.include_router(
+    chats_router, prefix=f"{settings.api_v1_str}", tags=["chats"]
 )
 from lete.app.api.settings import router as settings_router
 app.include_router(

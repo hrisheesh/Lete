@@ -9,9 +9,10 @@ from lete.app.providers.embeddings import get_embedding
 
 router = APIRouter()
 
-@router.post("/workspaces/{workspace_id}/query")
+@router.post("/workspaces/{workspace_id}/chats/{chat_id}/query")
 def query_workspace(
     workspace_id: str,
+    chat_id: str,
     request: QueryRequest,
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
@@ -25,7 +26,7 @@ def query_workspace(
         
     # 2. Setup GenerationService
     service = GenerationService(conn)
-    result = service.generate_answer(workspace_id, request.query, query_embedding)
+    result = service.generate_answer(workspace_id, chat_id, request.query, query_embedding)
     
     # 3. Stream the response using Server-Sent Events (SSE)
     def sse_generator():
@@ -46,9 +47,10 @@ def query_workspace(
         
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
-@router.get("/workspaces/{workspace_id}/history")
+@router.get("/workspaces/{workspace_id}/chats/{chat_id}/history")
 def get_workspace_history(
     workspace_id: str,
+    chat_id: str,
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
     cursor = conn.cursor()
@@ -58,9 +60,9 @@ def get_workspace_history(
         SELECT q.id, q.query_text, a.answer_text, a.retrieval_run_id, q.created_at
         FROM queries q
         LEFT JOIN answer_runs a ON q.id = a.query_id
-        WHERE q.workspace_id = ?
+        WHERE q.workspace_id = ? AND q.chat_id = ?
         ORDER BY q.created_at ASC
-    """, (workspace_id,))
+    """, (workspace_id, chat_id))
     
     history = []
     rows = cursor.fetchall()

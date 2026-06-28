@@ -24,6 +24,7 @@ interface Message {
 
 interface ChatPanelProps {
   workspaceId: string;
+  chatId: string;
   hasProcessedDocs: boolean;
 }
 
@@ -60,7 +61,7 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
 }
 
-export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelProps) {
+export default function ChatPanel({ workspaceId, chatId, hasProcessedDocs }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +71,7 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
 
   const fetchHistory = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/history`);
+      const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/chats/${chatId}/history`);
       if (!res.ok) return;
       const data = await res.json();
       const historyMessages: Message[] = [];
@@ -84,7 +85,7 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
     } catch (e) {
       console.error(e);
     }
-  }, [workspaceId]);
+  }, [workspaceId, chatId]);
 
   useEffect(() => {
     fetchHistory();
@@ -117,7 +118,7 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
     abortControllerRef.current = new AbortController();
 
     try {
-      const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/query`, {
+      const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/chats/${chatId}/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
