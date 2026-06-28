@@ -42,3 +42,15 @@ def delete_workspace(
     success = repo.delete(workspace_id)
     if not success:
         raise HTTPException(status_code=404, detail="Workspace not found")
+
+@router.put("/{workspace_id}", response_model=WorkspaceResponse)
+def update_workspace(
+    workspace_id: str,
+    workspace_in: WorkspaceCreate,
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    repo = WorkspaceRepository(conn)
+    workspace = repo.update(workspace_id, workspace_in)
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    return workspace

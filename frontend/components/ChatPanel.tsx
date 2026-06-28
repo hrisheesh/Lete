@@ -68,6 +68,28 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/history`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const historyMessages: Message[] = [];
+      for (const item of data) {
+        historyMessages.push({ role: "user", content: item.query });
+        if (item.answer) {
+          historyMessages.push({ role: "assistant", content: item.answer, citations: item.citations });
+        }
+      }
+      setMessages(historyMessages);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);

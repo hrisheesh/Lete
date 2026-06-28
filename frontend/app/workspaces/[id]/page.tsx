@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileText, MessageSquare } from "lucide-react";
+import { ArrowLeft, FileText, MessageSquare, Pencil, Trash2, Check, X } from "lucide-react";
 import FileUploadZone from "@/components/FileUploadZone";
 import DocumentList from "@/components/DocumentList";
 import ChunkPreviewModal from "@/components/ChunkPreviewModal";
@@ -35,6 +35,8 @@ export default function WorkspaceDashboard() {
   const [selectedChunkDocId, setSelectedChunkDocId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
 
   const hasProcessedDocs = documents.some((document) => document.status === "processed");
   const processingCount = documents.filter((document) => document.status === "processing").length;
@@ -43,7 +45,9 @@ export default function WorkspaceDashboard() {
     try {
       const res = await fetch(`${API_BASE}/workspaces/${id}`);
       if (res.ok) {
-        setWorkspace(await res.json());
+        const ws = await res.json();
+        setWorkspace(ws);
+        setEditName(ws.name);
       } else {
         router.push("/workspaces");
       }
@@ -75,6 +79,37 @@ export default function WorkspaceDashboard() {
     if (!confirm("Delete this document?")) return;
     await fetch(`${API_BASE}/documents/${docId}`, { method: "DELETE" });
     setDocuments((docs) => docs.filter((doc) => doc.id !== docId));
+  };
+
+  const handleDeleteWorkspace = async () => {
+    if (!confirm("Are you sure you want to delete this workspace forever? This will delete all documents and chat history.")) return;
+    try {
+      const res = await fetch(`${API_BASE}/workspaces/${id}`, { method: "DELETE" });
+      if (res.ok || res.status === 204) {
+        router.push("/workspaces");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRenameWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim() || !workspace) return;
+    try {
+      const res = await fetch(`${API_BASE}/workspaces/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setWorkspace(updated);
+        setIsEditing(false);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleProcess = async (docId: string) => {
@@ -126,10 +161,37 @@ export default function WorkspaceDashboard() {
             >
               <ArrowLeft size={17} />
             </Link>
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">{workspace.name}</h1>
-              <p className="mt-0.5 text-xs font-bold uppercase tracking-wide text-stone">
-                {documents.length} documents / {processingCount} processing
+            <div className="min-w-0 flex-1">
+              {isEditing ? (
+                <form onSubmit={handleRenameWorkspace} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-0.5 text-lg font-bold tracking-tight text-ink outline-none focus:border-brand-blue sm:text-xl"
+                    autoFocus
+                  />
+                  <button type="submit" className="flex size-7 shrink-0 items-center justify-center rounded bg-brand-blue text-white hover:bg-brand-blue/90">
+                    <Check size={14} />
+                  </button>
+                  <button type="button" onClick={() => { setIsEditing(false); setEditName(workspace.name); }} className="flex size-7 shrink-0 items-center justify-center rounded bg-surface text-steel hover:bg-black/5">
+                    <X size={14} />
+                  </button>
+                </form>
+              ) : (
+                <div className="group flex items-center gap-2">
+                  <h1 className="truncate text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">{workspace.name}</h1>
+                  <button onClick={() => setIsEditing(true)} className="opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-steel hover:text-ink">
+                    <Pencil size={14} />
+                  </button>
+                </div>
+              )}
+              <p className="mt-0.5 flex items-center gap-3 text-xs font-bold uppercase tracking-wide text-stone">
+                <span>{documents.length} documents</span>
+                {processingCount > 0 && <span className="text-brand-coral">{processingCount} processing</span>}
+                <button onClick={handleDeleteWorkspace} className="flex items-center gap-1 text-red-500 hover:text-red-700 transition">
+                  <Trash2 size={12} /> Delete Workspace
+                </button>
               </p>
             </div>
           </div>

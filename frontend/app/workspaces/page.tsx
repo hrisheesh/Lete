@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Plus, Search, Sparkles } from "lucide-react";
+import { WorkspaceItem } from "@/components/WorkspaceItem";
 
 interface Workspace {
   id: string;
@@ -62,6 +63,35 @@ export default function WorkspacesPage() {
       }
     } catch (e) {
       console.error("Failed create workspace:", getErrorMessage(e));
+    }
+  };
+
+  const handleUpdate = async (id: string, newName: string) => {
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/workspaces/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setWorkspaces(workspaces.map(w => w.id === id ? updated : w));
+      }
+    } catch (e) {
+      console.error("Failed to update workspace:", getErrorMessage(e));
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/workspaces/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok || res.status === 204) {
+        setWorkspaces(workspaces.filter(w => w.id !== id));
+      }
+    } catch (e) {
+      console.error("Failed to delete workspace:", getErrorMessage(e));
     }
   };
 
@@ -129,30 +159,13 @@ export default function WorkspacesPage() {
             ) : (
               <div className="grid gap-3 md:grid-cols-2">
                 {workspaces.map((ws, index) => (
-                  <Link
-                    key={ws.id}
-                    href={`/workspaces/${ws.id}`}
-                    className="group flex min-h-36 flex-col justify-between rounded-[1.5rem] border border-hairline-soft bg-white p-5 transition duration-200 ease-out hover:-translate-y-0.5 hover:border-ink hover:shadow-[0_18px_48px_rgba(17,17,17,0.08)]"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <span
-                        className={`flex size-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-white ${
-                          index % 3 === 0 ? "bg-brand-coral" : index % 3 === 1 ? "bg-brand-magenta" : "bg-brand-blue"
-                        }`}
-                      >
-                        {ws.name.slice(0, 1).toUpperCase()}
-                      </span>
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-steel transition duration-200 ease-out group-hover:bg-primary group-hover:text-on-primary">
-                        <ArrowRight size={17} />
-                      </span>
-                    </div>
-                    <div className="min-w-0 pt-6">
-                      <h3 className="truncate text-2xl font-bold tracking-tight text-ink">{ws.name}</h3>
-                      <p className="mt-1.5 text-sm font-semibold text-steel">
-                        Created {new Date(ws.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </Link>
+                  <WorkspaceItem 
+                    key={ws.id} 
+                    ws={ws} 
+                    index={index} 
+                    onUpdate={handleUpdate} 
+                    onDelete={handleDelete} 
+                  />
                 ))}
               </div>
             )}

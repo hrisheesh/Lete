@@ -40,3 +40,14 @@ class WorkspaceRepository(BaseRepository[WorkspaceResponse, WorkspaceCreate]):
         cursor = self.conn.cursor()
         cursor.execute("DELETE FROM workspaces WHERE id = ?", (id,))
         return cursor.rowcount > 0
+
+    def update(self, id: str, obj_in: WorkspaceCreate) -> Optional[WorkspaceResponse]:
+        cursor = self.conn.cursor()
+        now = datetime.utcnow().isoformat()
+        cursor.execute(
+            "UPDATE workspaces SET name = ?, updated_at = ? WHERE id = ?",
+            (obj_in.name, now, id),
+        )
+        if cursor.rowcount == 0:
+            return None
+        return self.get(id)

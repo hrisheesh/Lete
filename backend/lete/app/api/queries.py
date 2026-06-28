@@ -45,3 +45,55 @@ def query_workspace(
         yield "event: done\ndata: {}\n\n"
         
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
+
+@router.get("/workspaces/{workspace_id}/history")
+def get_workspace_history(
+    workspace_id: str,
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    cursor = conn.cursor()
+    
+    # 1. Get queries and their answers
+    cursor.execute("""
+        SELECT q.id, q.query_text, a.answer_text, a.retrieval_run_id, q.created_at
+        FROM queries q
+        LEFT JOIN answer_runs a ON q.id = a.query_id
+        WHERE q.workspace_id = ?
+        ORDER BY q.created_at ASC
+    """, (workspace_id,))
+    
+    history = []
+    rows = cursor.fetchall()
+    
+    for row in rows:
+        query_id, query_text, answer_text, run_id, created_at = row
+        
+        citations = []
+        if run_id:
+            cursor.execute("""
+                SELECT rr.chunk_id, c.document_id, d.filename, c.contextual_header, c.text
+                FROM retrieval_results rr
+                JOIN chunks c ON rr.chunk_id = c.id
+                JOIN documents d ON c.document_id = d.id
+                WHERE rr.run_id = ?
+                ORDER BY rr.rank ASC
+            """, (run_id,))
+            for cr in cursor.fetchall():
+                citations.append({
+                    "id": cr[0],
+                    "chunk_id": cr[0],
+                    "document_id": cr[1],
+                    "filename": cr[2],
+                    "contextual_header": cr[3],
+                    "text_preview": cr[4][:200] + "..." if len(cr[4]) > 200 else cr[4]
+                })
+                
+        history.append({
+            "id": query_id,
+            "query": query_text,
+            "answer": answer_text,
+            "citations": citations,
+            "created_at": created_at
+        })
+        
+    return history
