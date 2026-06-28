@@ -31,8 +31,8 @@ export default function WorkspacesPage() {
           const data = await res.json();
           setWorkspaces(data);
         }
-      } catch (e) {
-        console.error("Failed fetch workspaces:", getErrorMessage(e));
+      } catch (e: any) {
+        console.error("Failed to fetch workspaces:", e.message || e);
       } finally {
         if (mounted) setLoading(false);
       }
