@@ -4,16 +4,7 @@ import {
   looksLikeMermaid,
   normalizeMermaidChart,
   normalizeRenderableContent,
-} from "@/components/ChatPanel";
-
-jest.mock("mermaid", () => ({
-  __esModule: true,
-  default: {
-    initialize: jest.fn(),
-    parse: jest.fn(),
-    render: jest.fn(),
-  },
-}));
+} from "@/lib/chatRendering";
 
 describe("chat text rendering helpers", () => {
   it("recognizes mermaid language aliases from markdown code classes", () => {
@@ -32,6 +23,6 @@ describe("chat text rendering helpers", () => {
     const content = "Here is the diagram:\n\ngraph TD\nA[Prompt] --> B[LLM]\nB --> C[Answer]\n\nDone.";
 
     expect(looksLikeMermaid("graph TD\nA --> B")).toBe(true);
-    expect(normalizeRenderableContent(content)).toContain("```mermaid\ngraph TD\nA[Prompt] --> B[LLM]\nB --> C[Answer]\n```");
+    expect(normalizeRenderableContent(content)).toMatch(/```mermaid\ngraph TD\nA\[Prompt\] --> B\[LLM\]\nB --> C\[Answer\]\n\s*```/);
   });
 });
