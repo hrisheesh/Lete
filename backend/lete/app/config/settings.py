@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     api_key: str | None = None
     model_name: str | None = None
     embedding_model_name: str | None = None
+    
+    # Environment-provided default API keys
+    nvidia_api_key: str | None = None
+    groq_api_key: str | None = None
+    mistral_api_key: str | None = None
+    huggingface_api_key: str | None = None
+    anthropic_api_key: str | None = None
+    openrouter_api_key: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

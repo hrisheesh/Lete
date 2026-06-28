@@ -16,6 +16,7 @@ export default function ProviderSettingsForm() {
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [envDefaults, setEnvDefaults] = useState<Record<string, { api_key: string | null; model_name: string | null }>>({});
 
   const showBaseUrl = providerType === "local" || providerType === "openrouter";
 
@@ -24,13 +25,25 @@ export default function ProviderSettingsForm() {
 
     async function loadSettings() {
       try {
-        const res = await fetch(`${API_BASE}/settings`);
-        if (res.ok && mounted) {
-          const data = await res.json();
+        const [settingsRes, defaultsRes] = await Promise.all([
+          fetch(`${API_BASE}/settings`),
+          fetch(`${API_BASE}/settings/env-defaults`),
+        ]);
+        
+        let fetchedDefaults: Record<string, { api_key: string | null; model_name: string | null }> = {};
+        if (defaultsRes.ok && mounted) {
+          fetchedDefaults = await defaultsRes.json();
+          setEnvDefaults(fetchedDefaults);
+        }
+
+        if (settingsRes.ok && mounted) {
+          const data = await settingsRes.json();
           setProviderType(data.provider_type as ProviderType);
           setBaseUrl(data.base_url ?? "");
-          setApiKey(data.api_key ?? "");
-          setModelName(data.model_name ?? "");
+          
+          const providerDefaults = fetchedDefaults[data.provider_type] || {};
+          setApiKey(data.api_key || providerDefaults.api_key || "");
+          setModelName(data.model_name || providerDefaults.model_name || "");
           setEmbeddingModelName(data.embedding_model_name ?? "");
         }
       } catch (error) {
@@ -130,7 +143,21 @@ export default function ProviderSettingsForm() {
             <select
               id="provider-type"
               value={providerType}
-              onChange={(event) => setProviderType(event.target.value as ProviderType)}
+              onChange={(event) => {
+                const newProvider = event.target.value as ProviderType;
+                setProviderType(newProvider);
+                
+                const newDefaults = envDefaults[newProvider];
+                if (newDefaults) {
+                  const oldDefaults = envDefaults[providerType] || { api_key: null, model_name: null };
+                  if (!apiKey || apiKey === oldDefaults.api_key) {
+                    setApiKey(newDefaults.api_key || "");
+                  }
+                  if (!modelName || modelName === oldDefaults.model_name) {
+                    setModelName(newDefaults.model_name || "");
+                  }
+                }
+              }}
               className={`${inputClass} appearance-none`}
             >
               <option value="openai">OpenAI</option>

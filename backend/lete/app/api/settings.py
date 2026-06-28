@@ -38,6 +38,36 @@ def get_settings(conn: sqlite3.Connection = Depends(get_db_connection)):
     repo = ProviderSettingsRepository(conn)
     return repo.get(row["id"])
 
+@router.get("/env-defaults")
+def get_env_defaults():
+    """Returns available environment-provided default API keys and suggested models to auto-populate the frontend."""
+    return {
+        "nvidia": {
+            "api_key": settings.nvidia_api_key,
+            "model_name": "stepfun-ai/step-3.7-flash"
+        },
+        "groq": {
+            "api_key": settings.groq_api_key,
+            "model_name": "llama3-8b-8192"
+        },
+        "mistral": {
+            "api_key": settings.mistral_api_key,
+            "model_name": "mistral-small-latest"
+        },
+        "huggingface": {
+            "api_key": settings.huggingface_api_key,
+            "model_name": ""
+        },
+        "anthropic": {
+            "api_key": settings.anthropic_api_key,
+            "model_name": "claude-3-5-sonnet-20241022"
+        },
+        "openrouter": {
+            "api_key": settings.openrouter_api_key,
+            "model_name": ""
+        }
+    }
+
 @router.put("/provider", response_model=ProviderSettingsResponse)
 def update_provider_settings(
     settings_in: ProviderSettingsCreate,
