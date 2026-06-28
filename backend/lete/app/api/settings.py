@@ -44,11 +44,13 @@ def get_env_defaults():
     return {
         "nvidia": {
             "api_key": settings.nvidia_api_key,
-            "model_name": "stepfun-ai/step-3.7-flash"
+            "model_name": "stepfun-ai/step-3.7-flash",
+            "embedding_model_name": "nvidia/nv-embed-v1"
         },
         "groq": {
             "api_key": settings.groq_api_key,
-            "model_name": "llama3-8b-8192"
+            "model_name": "llama3-8b-8192",
+            "embedding_model_name": ""
         },
         "mistral": {
             "api_key": settings.mistral_api_key,

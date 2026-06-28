@@ -25,11 +25,16 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         try:
             for i in range(0, len(texts), batch_size):
                 batch = texts[i:i + batch_size]
-                response = self.client.embeddings.create(
-                    input=batch,
-                    model=self.model_name,
-                    encoding_format="float"
-                )
+                kwargs = {
+                    "input": batch,
+                    "model": self.model_name,
+                    "encoding_format": "float"
+                }
+                
+                if "nvidia" in self.model_name.lower():
+                    kwargs["extra_body"] = {"input_type": "query", "truncate": "NONE"}
+                    
+                response = self.client.embeddings.create(**kwargs)
                 for data in response.data:
                     emb = data.embedding
                     all_embeddings.append(emb)
