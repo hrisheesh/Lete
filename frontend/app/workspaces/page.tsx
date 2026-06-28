@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Plus, Search } from "lucide-react";
+import { ArrowRight, Plus, Search, Sparkles } from "lucide-react";
 
 interface Workspace {
   id: string;
@@ -39,7 +39,6 @@ export default function WorkspacesPage() {
     }
 
     fetchWorkspaces();
-
     return () => {
       mounted = false;
     };
@@ -55,7 +54,6 @@ export default function WorkspacesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newWorkspaceName }),
       });
-
       if (res.ok) {
         const newWorkspace = await res.json();
         setWorkspaces([...workspaces, newWorkspace]);
@@ -68,58 +66,54 @@ export default function WorkspacesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1280px] px-5 py-12 sm:px-8 sm:py-16">
-      <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-        <section className="rounded-[32px] bg-primary p-8 text-on-primary lg:sticky lg:top-24">
-          <p className="text-sm font-bold uppercase tracking-wide text-white/50">Workspaces</p>
-          <h1 className="mt-4 text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl">Your Workspaces</h1>
-          <p className="mt-5 text-base font-medium leading-7 text-white/64">
-            Keep each knowledge base clean, focused, and ready for document-grounded answers.
+    <div className="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+        <div className="rounded-[2rem] bg-primary p-6 text-on-primary shadow-[0_26px_90px_rgba(17,17,17,0.2)] sm:p-8">
+          <div className="mb-8 flex size-12 items-center justify-center rounded-full bg-white/12">
+            <Sparkles size={22} />
+          </div>
+          <p className="text-sm font-bold uppercase tracking-wide text-white/48">Workspaces</p>
+          <h1 className="mt-3 text-balance text-5xl font-bold leading-[1.02] tracking-tight sm:text-6xl">Choose the context before the answer.</h1>
+          <p className="mt-5 max-w-xl text-base font-medium leading-7 text-white/66">
+            Keep each knowledge base focused so uploads, retrieval, and citations stay easy to trust.
           </p>
 
-          <form onSubmit={handleCreate} className="mt-8 rounded-[24px] bg-white p-3 text-ink shadow-2xl">
-            <label className="sr-only" htmlFor="workspace-name">
-              Workspace name
+          <form onSubmit={handleCreate} className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/8 p-3">
+            <label htmlFor="workspace-name" className="sr-only">
+              New workspace name
             </label>
             <div className="flex flex-col gap-3 sm:flex-row">
               <input
                 id="workspace-name"
+                type="text"
                 value={newWorkspaceName}
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
                 placeholder="New workspace name"
-                className="h-12 min-w-0 flex-1 rounded-full border border-hairline bg-surface px-5 text-sm font-semibold text-ink placeholder:text-stone focus:border-brand-blue-deep"
+                className="min-h-12 flex-1 rounded-full border border-white/10 bg-white px-4 text-base font-semibold text-ink placeholder:text-muted"
               />
               <button
                 type="submit"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-on-primary transition-colors hover:bg-charcoal"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand-coral px-5 text-sm font-bold text-white transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#e94a28]"
               >
                 <Plus size={17} />
                 Create
               </button>
             </div>
           </form>
-        </section>
+        </div>
 
-        <section>
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-stone">{workspaces.length} total</p>
-              <h2 className="mt-1 text-2xl font-bold tracking-tight text-ink">Knowledge bases</h2>
-            </div>
-            <div className="hidden h-11 items-center gap-2 rounded-full border border-hairline bg-canvas px-4 text-sm font-semibold text-steel sm:flex">
-              <Search size={16} />
-              Browse
-            </div>
+        <div className="space-y-4">
+          <div className="soft-panel flex items-center gap-3 rounded-[1.5rem] px-4 py-3 text-sm font-bold text-steel">
+            <Search size={17} />
+            <span>{loading ? "Loading workspaces" : `${workspaces.length} workspace${workspaces.length === 1 ? "" : "s"} available`}</span>
           </div>
 
           {loading ? (
-            <div className="rounded-[28px] border border-hairline-soft bg-canvas p-8 text-sm font-semibold text-steel">
-              Loading workspaces...
-            </div>
+            <div className="premium-panel rounded-[2rem] p-8 text-sm font-bold text-steel">Loading workspaces...</div>
           ) : workspaces.length === 0 ? (
-            <div className="rounded-[28px] border border-dashed border-hairline bg-surface p-10 text-center">
-              <p className="text-lg font-bold text-ink">No workspaces found</p>
-              <p className="mt-2 text-sm font-medium text-steel">Create one to start uploading documents.</p>
+            <div className="soft-panel rounded-[2rem] border-dashed p-10 text-center">
+              <p className="text-xl font-bold tracking-tight text-ink">No workspaces yet</p>
+              <p className="mx-auto mt-2 max-w-sm text-sm font-semibold leading-6 text-steel">Create one to start uploading documents.</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
@@ -127,36 +121,30 @@ export default function WorkspacesPage() {
                 <Link
                   key={ws.id}
                   href={`/workspaces/${ws.id}`}
-                  className="group flex min-h-44 flex-col justify-between rounded-[28px] border border-hairline-soft bg-canvas p-6 shadow-[0_18px_60px_rgba(10,10,10,0.05)] transition-colors hover:border-ink"
+                  className="group premium-panel flex min-h-44 flex-col justify-between rounded-[2rem] p-6 transition duration-200 ease-out hover:-translate-y-1 hover:border-ink"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <span
-                      className={`flex size-11 items-center justify-center rounded-full text-sm font-bold text-white ${
-                        index % 3 === 0
-                          ? "bg-brand-coral"
-                          : index % 3 === 1
-                            ? "bg-brand-magenta"
-                            : "bg-brand-blue"
+                      className={`flex size-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-white ${
+                        index % 3 === 0 ? "bg-brand-coral" : index % 3 === 1 ? "bg-brand-magenta" : "bg-brand-blue"
                       }`}
                     >
                       {ws.name.slice(0, 1).toUpperCase()}
                     </span>
-                    <span className="flex size-10 items-center justify-center rounded-full bg-surface text-steel transition-colors group-hover:bg-primary group-hover:text-on-primary">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-steel transition duration-200 ease-out group-hover:bg-primary group-hover:text-on-primary">
                       <ArrowRight size={17} />
                     </span>
                   </div>
-                  <div>
-                    <h3 className="truncate text-xl font-bold tracking-tight text-ink">{ws.name}</h3>
-                    <p className="mt-2 text-sm font-medium text-steel">
-                      Created {new Date(ws.created_at).toLocaleDateString()}
-                    </p>
+                  <div className="min-w-0 pt-8">
+                    <h3 className="truncate text-2xl font-bold tracking-tight text-ink">{ws.name}</h3>
+                    <p className="mt-2 text-sm font-semibold text-steel">Created {new Date(ws.created_at).toLocaleDateString()}</p>
                   </div>
                 </Link>
               ))}
             </div>
           )}
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

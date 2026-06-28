@@ -37,7 +37,6 @@ export default function ProviderSettingsForm() {
     }
 
     loadSettings();
-
     return () => {
       mounted = false;
     };
@@ -46,28 +45,26 @@ export default function ProviderSettingsForm() {
   const handleTestConnection = async () => {
     setIsTesting(true);
     setNotification(null);
-
     try {
       const res = await fetch("http://localhost:8000/api/v1/settings/test-provider", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider_type: providerType,
-          base_url: showBaseUrl ? baseUrl : null,
-          api_key: apiKey,
-          model_name: modelName,
-          embedding_model_name: embeddingModelName,
+          base_url: baseUrl || null,
+          api_key: apiKey || null,
+          model_name: modelName || null,
+          embedding_model_name: embeddingModelName || null,
         }),
       });
-
       const data = await res.json();
-      setNotification({
-        type: res.ok ? "success" : "error",
-        message: data.message || (res.ok ? "Connection successful" : "Connection failed"),
-      });
-    } catch (e) {
-      console.error("Failed to test provider:", e);
-      setNotification({ type: "error", message: "Connection failed" });
+      if (res.ok) {
+        setNotification({ type: "success", message: data.message || "Connection successful" });
+      } else {
+        setNotification({ type: "error", message: data.detail || "Connection failed" });
+      }
+    } catch {
+      setNotification({ type: "error", message: "Network error while testing connection" });
     } finally {
       setIsTesting(false);
     }
@@ -76,62 +73,54 @@ export default function ProviderSettingsForm() {
   const handleSaveSettings = async () => {
     setIsSaving(true);
     setNotification(null);
-
     try {
       const res = await fetch("http://localhost:8000/api/v1/settings", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider_type: providerType,
-          base_url: showBaseUrl ? baseUrl : null,
-          api_key: apiKey,
-          model_name: modelName,
-          embedding_model_name: embeddingModelName,
+          base_url: baseUrl || null,
+          api_key: apiKey || null,
+          model_name: modelName || null,
+          embedding_model_name: embeddingModelName || null,
         }),
       });
-
       const data = await res.json();
-      setNotification({
-        type: res.ok ? "success" : "error",
-        message: data.message || (res.ok ? "Settings saved" : "Failed to save settings"),
-      });
-    } catch (e) {
-      console.error("Failed to save settings:", e);
-      setNotification({ type: "error", message: "Failed to save settings" });
+      if (res.ok) {
+        setNotification({ type: "success", message: "Settings saved" });
+      } else {
+        setNotification({ type: "error", message: data.detail || "Failed to save settings" });
+      }
+    } catch {
+      setNotification({ type: "error", message: "Network error while saving settings" });
     } finally {
       setIsSaving(false);
     }
   };
 
   const inputClass =
-    "h-11 w-full rounded-xl border border-hairline bg-canvas px-4 text-base font-medium text-ink transition-colors placeholder:text-muted focus:border-brand-blue-deep";
+    "h-12 w-full rounded-2xl border border-hairline bg-canvas px-4 text-base font-semibold text-ink transition duration-200 ease-out placeholder:text-muted focus:border-brand-blue-deep focus:shadow-[0_0_0_4px_rgba(20,86,240,0.08)]";
   const labelClass = "block text-sm font-bold text-charcoal";
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-hairline-soft bg-canvas shadow-[0_24px_80px_rgba(10,10,10,0.08)]">
-      <div className="border-b border-hairline-soft bg-primary p-7 text-on-primary">
+    <div className="premium-panel overflow-hidden rounded-[2rem]">
+      <div className="border-b border-hairline-soft bg-white/70 p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="mb-4 flex size-11 items-center justify-center rounded-full bg-white/12">
+            <div className="mb-4 flex size-11 items-center justify-center rounded-full bg-primary text-on-primary">
               <SlidersHorizontal size={21} />
             </div>
-            <h2 className="text-3xl font-bold tracking-tight">AI Provider</h2>
-            <p className="mt-2 text-sm font-medium leading-6 text-white/64">
-              Choose the model endpoint Lete uses for retrieval answers and embeddings.
-            </p>
+            <h2 className="text-3xl font-bold tracking-tight text-ink">AI Provider</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-steel">Model, endpoint, and embedding settings.</p>
           </div>
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-primary">BETA</span>
+          <span className="rounded-full bg-surface px-3 py-1 text-xs font-bold text-steel">BETA</span>
         </div>
       </div>
 
-      <div className="space-y-6 p-6 sm:p-8">
+      <div className="space-y-6 p-5 sm:p-6 lg:p-8">
         <div className="space-y-2">
           <label className={labelClass}>Provider Type</label>
-          <select
-            value={providerType}
-            onChange={(e) => setProviderType(e.target.value as ProviderType)}
-            className={`${inputClass} appearance-none`}
-          >
+          <select value={providerType} onChange={(e) => setProviderType(e.target.value as ProviderType)} className={`${inputClass} appearance-none`}>
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
             <option value="openrouter">OpenRouter</option>
@@ -155,27 +144,15 @@ export default function ProviderSettingsForm() {
         <div className="space-y-2">
           <label className={labelClass}>
             API Key
-            {providerType === "local" && <span className="ml-1 font-medium text-steel">(Optional for Local)</span>}
+            {providerType === "local" && <span className="ml-1 font-semibold text-steel">(Optional for Local)</span>}
           </label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-..."
-            className={inputClass}
-          />
+          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-..." className={inputClass} />
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
             <label className={labelClass}>Primary Model</label>
-            <input
-              type="text"
-              value={modelName}
-              onChange={(e) => setModelName(e.target.value)}
-              placeholder="gpt-4o"
-              className={inputClass}
-            />
+            <input type="text" value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="gpt-4o" className={inputClass} />
           </div>
           <div className="space-y-2">
             <label className={labelClass}>Embedding Model</label>
@@ -191,7 +168,7 @@ export default function ProviderSettingsForm() {
 
         {notification && (
           <div
-            className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-semibold ${
+            className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm font-bold ${
               notification.type === "error"
                 ? "border-brand-coral/25 bg-brand-coral/10 text-brand-coral"
                 : "border-success-text/20 bg-success-bg text-success-text"
@@ -206,16 +183,16 @@ export default function ProviderSettingsForm() {
           <button
             onClick={handleTestConnection}
             disabled={isTesting || isSaving}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-ink px-6 text-sm font-bold text-ink transition-colors hover:bg-ink hover:text-on-primary disabled:cursor-not-allowed disabled:border-hairline disabled:text-muted"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-ink px-6 text-sm font-bold text-ink transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-ink hover:text-on-primary disabled:border-hairline disabled:text-muted"
           >
-            {isTesting ? "Testing..." : "Test Connection"}
+            {isTesting ? "Testing..." : "Test connection"}
           </button>
           <button
             onClick={handleSaveSettings}
             disabled={isTesting || isSaving}
-            className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-bold text-on-primary transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:bg-hairline disabled:text-muted"
+            className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-bold text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:bg-hairline disabled:text-muted"
           >
-            {isSaving ? "Saving..." : "Save Settings"}
+            {isSaving ? "Saving..." : "Save settings"}
           </button>
         </div>
       </div>

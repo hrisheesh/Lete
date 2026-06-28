@@ -29,7 +29,6 @@ type ActiveTab = "documents" | "chat";
 export default function WorkspaceDashboard() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,80 +62,68 @@ export default function WorkspaceDashboard() {
   }, [id]);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function loadWorkspace() {
+    async function load() {
+      setLoading(true);
       await Promise.all([fetchWorkspace(), fetchDocuments()]);
-      if (mounted) setLoading(false);
+      setLoading(false);
     }
 
-    loadWorkspace();
+    load();
+  }, [fetchWorkspace, fetchDocuments]);
 
-    return () => {
-      mounted = false;
-    };
-  }, [fetchDocuments, fetchWorkspace]);
-
-  useEffect(() => {
-    if (!documents.some((document) => document.status === "processing")) return;
-    const interval = setInterval(fetchDocuments, 2000);
-    return () => clearInterval(interval);
-  }, [documents, fetchDocuments]);
-
-  const handleDeleteDocument = async (docId: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/documents/${docId}`, { method: "DELETE" });
-      if (res.ok) fetchDocuments();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleProcessDocument = async (docId: string) => {
-    if (isProcessing) return;
+  const handleProcess = async (docId: string) => {
     setIsProcessing(docId);
     try {
-      await fetch(`${API_BASE}/documents/${docId}/process`, { method: "POST" });
-      fetchDocuments();
+      const res = await fetch(`${API_BASE}/documents/${docId}/process`, { method: "POST" });
+      if (res.ok) {
+        await fetchDocuments();
+      }
     } catch (e) {
       console.error(e);
-      alert("An error occurred starting process");
     } finally {
       setIsProcessing(null);
     }
   };
 
+  const handleDelete = async (docId: string) => {
+    if (!confirm("Delete this document?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/documents/${docId}`, { method: "DELETE" });
+      if (res.ok) {
+        setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (loading) {
-    return (
-      <div className="mx-auto max-w-[1280px] px-5 py-12 text-sm font-semibold text-steel sm:px-8">
-        Loading workspace...
-      </div>
-    );
+    return <div className="mx-auto max-w-[1320px] px-4 py-12 text-sm font-bold text-steel sm:px-6 lg:px-8">Loading workspace...</div>;
   }
 
   if (!workspace) return null;
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-      <div className="mb-6 flex flex-col gap-5 lg:mb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mb-5 flex flex-col gap-4 lg:mb-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <Link
             href="/workspaces"
-            className="inline-flex items-center gap-2 rounded-full border border-hairline bg-canvas px-4 py-2 text-sm font-bold text-steel transition-colors hover:border-ink hover:text-ink"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-hairline bg-canvas px-4 text-sm font-bold text-steel transition duration-200 ease-out hover:border-ink hover:text-ink"
           >
             <ArrowLeft size={16} />
             Back
           </Link>
-          <h1 className="mt-5 break-words text-3xl font-bold leading-tight tracking-tight text-ink sm:text-5xl">{workspace.name}</h1>
-          <p className="mt-3 text-sm font-semibold text-steel">
-            {documents.length} documents · {processingCount} processing
+          <h1 className="mt-5 break-words text-4xl font-bold leading-tight tracking-tight text-ink sm:text-6xl">{workspace.name}</h1>
+          <p className="mt-2 text-sm font-bold text-steel">
+            {documents.length} documents / {processingCount} processing
           </p>
         </div>
 
-        <div className="grid w-full grid-cols-2 rounded-full border border-hairline bg-canvas p-1 shadow-sm sm:inline-flex sm:w-auto">
+        <div className="grid w-full grid-cols-2 rounded-full border border-hairline bg-canvas p-1 shadow-[0_12px_36px_rgba(17,17,17,0.06)] sm:inline-grid sm:w-auto">
           <button
             onClick={() => setActiveTab("documents")}
-            className={`inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition-[background-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 ${
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition duration-200 ease-out hover:-translate-y-0.5 ${
               activeTab === "documents" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
             }`}
           >
@@ -145,7 +132,7 @@ export default function WorkspaceDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("chat")}
-            className={`inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition-[background-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 ${
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition duration-200 ease-out hover:-translate-y-0.5 ${
               activeTab === "chat" ? "bg-primary text-on-primary" : "text-steel hover:bg-surface hover:text-ink"
             }`}
           >
@@ -155,48 +142,22 @@ export default function WorkspaceDashboard() {
         </div>
       </div>
 
-      {activeTab === "documents" ? (
-        <div className="grid gap-5 xl:grid-cols-[minmax(300px,380px)_1fr] xl:items-start">
-          <aside className="space-y-5">
-            <FileUploadZone workspaceId={workspace.id} onUploadComplete={fetchDocuments} />
-            <div className="rounded-[28px] border border-hairline-soft bg-canvas p-6">
-              <p className="text-sm font-bold uppercase tracking-wide text-stone">Readiness</p>
-              <div className="mt-5 space-y-3">
-                <div className="flex items-center justify-between text-sm font-semibold">
-                  <span className="text-steel">Processed</span>
-                  <span className="text-ink">
-                    {documents.filter((document) => document.status === "processed").length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm font-semibold">
-                  <span className="text-steel">Pending</span>
-                  <span className="text-ink">
-                    {documents.filter((document) => document.status !== "processed").length}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <section>
-            {documents.length === 0 ? (
-              <div className="rounded-[28px] border border-dashed border-hairline bg-surface p-12 text-center">
-                <p className="text-lg font-bold text-ink">No documents yet</p>
-                <p className="mt-2 text-sm font-medium text-steel">Upload files to build this workspace context.</p>
-              </div>
-            ) : (
-              <DocumentList
-                documents={documents}
-                onDelete={handleDeleteDocument}
-                onProcess={handleProcessDocument}
-                onViewChunks={setSelectedChunkDocId}
-              />
-            )}
-          </section>
+      <section className="grid gap-5 xl:grid-cols-[minmax(22rem,0.82fr)_minmax(0,1.18fr)]">
+        <div className={`${activeTab === "documents" ? "block" : "hidden xl:block"} space-y-5`}>
+          <FileUploadZone workspaceId={id} onUploadComplete={fetchDocuments} />
+          <DocumentList
+            documents={documents}
+            onDelete={handleDelete}
+            onProcess={handleProcess}
+            onViewChunks={setSelectedChunkDocId}
+            processingId={isProcessing}
+          />
         </div>
-      ) : (
-        <ChatPanel workspaceId={workspace.id} hasProcessedDocs={hasProcessedDocs} />
-      )}
+
+        <div className={`${activeTab === "chat" ? "block" : "hidden xl:block"} min-h-[calc(100svh-13rem)]`}>
+          <ChatPanel workspaceId={id} hasProcessedDocs={hasProcessedDocs} />
+        </div>
+      </section>
 
       {selectedChunkDocId && <ChunkPreviewModal documentId={selectedChunkDocId} onClose={() => setSelectedChunkDocId(null)} />}
     </div>

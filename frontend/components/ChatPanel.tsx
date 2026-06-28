@@ -50,7 +50,7 @@ function CitationBadge({ citation }: { citation: Citation }) {
     <span ref={ref} className="relative inline-block align-baseline">
       <button
         onClick={() => setOpen((value) => !value)}
-        className="mx-1 inline-flex size-5 translate-y-[-2px] items-center justify-center rounded-full bg-primary text-[10px] font-bold text-on-primary transition-[background-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal"
+        className="mx-1 inline-flex size-5 translate-y-[-2px] items-center justify-center rounded-full bg-primary text-[10px] font-bold text-on-primary transition duration-200 ease-out hover:-translate-y-1 hover:bg-charcoal"
         title={`Source: ${citation.filename}`}
       >
         {citation.id.replace(/[\[\]]/g, "")}
@@ -60,9 +60,7 @@ function CitationBadge({ citation }: { citation: Citation }) {
         <div className="absolute bottom-full left-1/2 z-50 mb-3 w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl bg-primary p-4 text-left text-on-primary shadow-2xl">
           <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-white/45">Source {citation.id}</div>
           <div className="mb-1 truncate text-sm font-bold text-white">{citation.filename}</div>
-          {citation.contextual_header && (
-            <div className="mb-2 truncate text-xs font-medium text-white/50">{citation.contextual_header}</div>
-          )}
+          {citation.contextual_header && <div className="mb-2 truncate text-xs font-semibold text-white/50">{citation.contextual_header}</div>}
           <div className="line-clamp-3 text-xs font-medium leading-5 text-white/70">{citation.text_preview}</div>
           <div className="absolute left-1/2 top-full size-3 -translate-x-1/2 rotate-45 bg-primary" />
         </div>
@@ -71,20 +69,47 @@ function CitationBadge({ citation }: { citation: Citation }) {
   );
 }
 
-function renderInlineText(text: string, citations?: Citation[]) {
-  if (!citations || citations.length === 0) return text;
+function getCitationMap(citations?: Citation[]) {
+  const citationMap = new Map<string, Citation>();
+  citations?.forEach((citation) => {
+    const cleanId = citation.id.replace(/[\[\]]/g, "");
+    citationMap.set(citation.id, citation);
+    citationMap.set(cleanId, citation);
+    citationMap.set(`[${cleanId}]`, citation);
+  });
+  return citationMap;
+}
 
-  const citationMap = new Map(citations.map((citation) => [citation.id, citation]));
-  return text.split(/(\[\d+\])/g).map((part, index) => {
-    const citation = citationMap.get(part);
+function renderInlineText(text: string, citations?: Citation[]) {
+  const citationMap = getCitationMap(citations);
+  const parts = text.split(/(\*\*[^*]+\*\*|\[\d+\]|\b\d+\b)/g).filter(Boolean);
+
+  return parts.map((part, index) => {
+    const citation = citationMap.get(part) ?? citationMap.get(part.replace(/[\[\]]/g, ""));
     if (citation) return <CitationBadge key={`${part}-${index}`} citation={citation} />;
+
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={`${part}-${index}`} className="font-bold text-ink">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+
     return <span key={`${part}-${index}`}>{part}</span>;
   });
 }
 
+function normalizeContent(content: string) {
+  return content
+    .replace(/\r\n/g, "\n")
+    .replace(/([.!?])\s+(\*\*[^*]+\*\*:)/g, "$1\n\n$2")
+    .trim();
+}
+
 function parseMarkdownBlocks(content: string): MarkdownBlock[] {
   const blocks: MarkdownBlock[] = [];
-  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  const lines = normalizeContent(content).split("\n");
   let paragraph: string[] = [];
   let listItems: string[] = [];
   let orderedList = false;
@@ -138,39 +163,45 @@ function parseMarkdownBlocks(content: string): MarkdownBlock[] {
       continue;
     }
 
+    const documentLead = trimmed.match(/^(\*\*[^*]+\*\*:)\s*(.+)$/);
+    if (documentLead) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: "heading", text: documentLead[1] });
+      blocks.push({ type: "paragraph", text: documentLead[2] });
+      continue;
+    }
+
     const bullet = trimmed.match(/^[-*]\s+(.+)$/);
     const numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
     if (bullet || numbered) {
       flushParagraph();
       const nextOrdered = Boolean(numbered);
-      if (listItems.length > 0 && nextOrdered !== orderedList) flushList();
+      if (listItems.length > 0 && orderedList !== nextOrdered) flushList();
       orderedList = nextOrdered;
       listItems.push((bullet?.[1] ?? numbered?.[1] ?? "").trim());
       continue;
     }
 
-    flushList();
     paragraph.push(trimmed);
   }
 
-  if (inCode) blocks.push({ type: "code", text: codeLines.join("\n") });
   flushParagraph();
   flushList();
+  if (inCode && codeLines.length > 0) blocks.push({ type: "code", text: codeLines.join("\n") });
 
-  return blocks;
+  return blocks.length > 0 ? blocks : [{ type: "paragraph", text: content }];
 }
 
-function MessageContent({ content, citations }: { content: string; citations?: Citation[] }) {
+function FormattedMessage({ content, citations }: { content: string; citations?: Citation[] }) {
   const blocks = parseMarkdownBlocks(content);
 
-  if (blocks.length === 0) return null;
-
   return (
-    <div className="message-format">
+    <div className="space-y-4 text-[15px] font-medium leading-7 text-slate">
       {blocks.map((block, index) => {
         if (block.type === "heading") {
           return (
-            <h4 key={index} className="text-[15px] font-bold leading-6 text-ink">
+            <h4 key={index} className="border-b border-hairline-soft pb-2 text-base font-bold leading-6 tracking-tight text-ink">
               {renderInlineText(block.text, citations)}
             </h4>
           );
@@ -178,7 +209,7 @@ function MessageContent({ content, citations }: { content: string; citations?: C
 
         if (block.type === "code") {
           return (
-            <pre key={index} className="overflow-x-auto rounded-xl bg-primary px-4 py-3 text-xs leading-5 text-on-primary">
+            <pre key={index} className="overflow-x-auto rounded-2xl bg-primary px-4 py-3 text-xs leading-5 text-on-primary">
               <code>{block.text}</code>
             </pre>
           );
@@ -187,7 +218,7 @@ function MessageContent({ content, citations }: { content: string; citations?: C
         if (block.type === "list") {
           const ListTag = block.ordered ? "ol" : "ul";
           return (
-            <ListTag key={index} className={block.ordered ? "list-decimal space-y-1 pl-5" : "list-disc space-y-1 pl-5"}>
+            <ListTag key={index} className={block.ordered ? "list-decimal space-y-2 pl-5" : "list-disc space-y-2 pl-5"}>
               {block.items.map((item, itemIndex) => (
                 <li key={itemIndex}>{renderInlineText(item, citations)}</li>
               ))}
@@ -208,11 +239,11 @@ function StreamingCursor() {
 function EmptyState({ hasProcessedDocs }: { hasProcessedDocs: boolean }) {
   return (
     <div className="flex min-h-full flex-1 flex-col items-center justify-center px-5 py-12 text-center sm:px-6 sm:py-16">
-      <div className="flex size-14 items-center justify-center rounded-full bg-primary text-on-primary sm:size-16">
-        <Bot size={28} />
+      <div className="flex size-16 items-center justify-center rounded-full bg-primary text-on-primary shadow-[0_16px_40px_rgba(17,17,17,0.18)]">
+        <Bot size={29} />
       </div>
-      <p className="mt-5 text-lg font-bold tracking-tight text-ink sm:mt-6">Ask anything about documents</p>
-      <p className="mt-2 max-w-sm text-sm font-medium leading-6 text-steel">
+      <p className="mt-6 text-xl font-bold tracking-tight text-ink">Ask anything about documents</p>
+      <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-steel">
         {hasProcessedDocs
           ? "Type a question below. Answers stay grounded in your documents with inline citations."
           : "Upload and process at least one document to start asking questions."}
@@ -284,60 +315,55 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        buffer = lines.pop() ?? "";
 
         for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-
-          const data = line.slice(6);
-          if (data === "{}") continue;
-
+          if (!line.trim()) continue;
           try {
-            const parsed = JSON.parse(data);
-
-            if (parsed.citations) {
-              citations = parsed.citations;
+            const event = JSON.parse(line);
+            if (event.type === "token") {
               setMessages((prev) => {
                 const next = [...prev];
-                const last = { ...next[next.length - 1], citations };
-                next[next.length - 1] = last;
+                const last = next[next.length - 1];
+                if (last?.role === "assistant") last.content += event.content;
                 return next;
               });
-            }
-
-            if (parsed.text) {
+            } else if (event.type === "citations") {
+              citations = event.citations;
               setMessages((prev) => {
                 const next = [...prev];
-                const last = { ...next[next.length - 1] };
-                last.content += parsed.text;
-                next[next.length - 1] = last;
+                const last = next[next.length - 1];
+                if (last?.role === "assistant") last.citations = citations;
                 return next;
               });
+            } else if (event.type === "error") {
+              throw new Error(event.message);
             }
-          } catch {
-            continue;
+          } catch (parseError) {
+            console.error("Stream parse error:", parseError, line);
           }
         }
       }
 
       setMessages((prev) => {
         const next = [...prev];
-        const last = { ...next[next.length - 1], isStreaming: false };
-        next[next.length - 1] = last;
+        const last = next[next.length - 1];
+        if (last?.role === "assistant") {
+          last.isStreaming = false;
+          last.citations = citations;
+        }
         return next;
       });
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return;
-
       setMessages((prev) => {
         const next = [...prev];
-        const last = {
-          ...next[next.length - 1],
-          isStreaming: false,
-          error: getErrorMessage(error),
-          content: "I could not complete that answer.",
-        };
-        next[next.length - 1] = last;
+        const last = next[next.length - 1];
+        if (last?.role === "assistant") {
+          last.isStreaming = false;
+          last.error = getErrorMessage(error);
+          last.content = last.content || "I could not complete that response.";
+        }
         return next;
       });
     } finally {
@@ -346,107 +372,104 @@ export default function ChatPanel({ workspaceId, hasProcessedDocs }: ChatPanelPr
     }
   }, [hasProcessedDocs, input, isLoading, workspaceId]);
 
-  const stopGeneration = () => {
+  const stopStreaming = () => {
     abortControllerRef.current?.abort();
     setIsLoading(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
   return (
-    <div className="flex min-h-[620px] overflow-hidden rounded-[28px] border border-hairline-soft bg-canvas shadow-[0_18px_60px_rgba(10,10,10,0.05)] lg:h-[calc(100vh-180px)] lg:min-h-[560px]">
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-hairline-soft bg-surface px-4 py-4 sm:px-5">
-          <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-stone">Workspace chat</p>
-            <h3 className="mt-1 truncate text-lg font-bold tracking-tight text-ink">Grounded answers</h3>
-          </div>
-          <span className="shrink-0 rounded-full bg-canvas px-3 py-1 text-xs font-bold text-steel">
-            {hasProcessedDocs ? "Ready" : "Needs documents"}
-          </span>
+    <div className="premium-panel flex h-[calc(100svh-13rem)] min-h-[34rem] flex-col overflow-hidden rounded-[2rem]">
+      <div className="flex items-center justify-between border-b border-hairline-soft bg-white/70 px-4 py-4 sm:px-5">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-stone">Grounded chat</p>
+          <h2 className="mt-1 text-xl font-bold tracking-tight text-ink">Ask your workspace</h2>
         </div>
+        <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-on-primary">{hasProcessedDocs ? "Ready" : "Needs docs"}</span>
+      </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-surface/35 px-3 py-4 sm:px-5 sm:py-6">
-          {messages.length === 0 ? (
-            <EmptyState hasProcessedDocs={hasProcessedDocs} />
-          ) : (
-            <div className="space-y-4 sm:space-y-5">
-              {messages.map((message, index) => {
-                const isUser = message.role === "user";
+      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-5">
+        {messages.length === 0 ? (
+          <EmptyState hasProcessedDocs={hasProcessedDocs} />
+        ) : (
+          <div className="space-y-5">
+            {messages.map((message, index) => {
+              const isUser = message.role === "user";
+              return (
+                <div key={index} className={`animate-message-in flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
+                  {!isUser && (
+                    <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary">
+                      <Bot size={18} />
+                    </div>
+                  )}
 
-                return (
                   <div
-                    key={index}
-                    className={`flex animate-[messageIn_220ms_ease-out] gap-2 sm:gap-3 ${
-                      isUser ? "justify-end" : "justify-start"
+                    className={`max-w-[min(44rem,calc(100%-3rem))] rounded-[1.5rem] px-4 py-3 sm:px-5 sm:py-4 ${
+                      isUser
+                        ? "bg-primary text-on-primary shadow-[0_16px_42px_rgba(17,17,17,0.16)]"
+                        : "border border-hairline-soft bg-canvas text-slate shadow-[0_14px_44px_rgba(17,17,17,0.05)]"
                     }`}
                   >
-                    {!isUser && (
-                      <span className="mt-1 hidden size-9 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary sm:flex">
-                        <Bot size={17} />
-                      </span>
-                    )}
-                    <div
-                      className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm font-medium leading-7 sm:max-w-[82%] md:max-w-[76%] ${
-                        isUser
-                          ? "bg-primary text-on-primary"
-                          : "border border-hairline-soft bg-canvas text-slate shadow-sm"
-                      }`}
-                    >
-                      <MessageContent content={message.content} citations={message.citations} />
-                      {message.isStreaming && <StreamingCursor />}
-                      {message.error && <div className="mt-2 text-xs font-bold text-brand-coral">{message.error}</div>}
-                    </div>
-                    {isUser && (
-                      <span className="mt-1 hidden size-9 shrink-0 items-center justify-center rounded-full bg-surface text-steel sm:flex">
-                        <UserRound size={17} />
-                      </span>
+                    {isUser ? (
+                      <p className="whitespace-pre-wrap text-sm font-semibold leading-6">{message.content}</p>
+                    ) : (
+                      <>
+                        <FormattedMessage content={message.content} citations={message.citations} />
+                        {message.isStreaming && <StreamingCursor />}
+                        {message.error && <p className="mt-3 rounded-xl bg-brand-coral/10 px-3 py-2 text-sm font-bold text-brand-coral">{message.error}</p>}
+                      </>
                     )}
                   </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
 
-        <div className="shrink-0 border-t border-hairline-soft bg-canvas p-3 sm:p-4">
-          <div className="flex items-end gap-2 rounded-[22px] border border-hairline bg-surface p-2 transition-colors duration-200 ease-out focus-within:border-brand-blue-deep sm:gap-3">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={!hasProcessedDocs || isLoading}
-              placeholder={hasProcessedDocs ? "Ask about your documents..." : "Process a document to enable chat"}
-              rows={1}
-              className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-base font-medium leading-6 text-ink outline-none placeholder:text-stone disabled:cursor-not-allowed sm:text-sm"
-            />
-
-            {isLoading ? (
-              <button
-                onClick={stopGeneration}
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition-[background-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal sm:size-10"
-                aria-label="Stop generation"
-              >
-                <Square size={16} />
-              </button>
-            ) : (
-              <button
-                onClick={sendMessage}
-                disabled={!input.trim() || !hasProcessedDocs}
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition-[background-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:cursor-not-allowed disabled:bg-hairline disabled:text-muted disabled:hover:translate-y-0 sm:size-10"
-                aria-label="Send message"
-              >
-                <Send size={17} />
-              </button>
-            )}
+                  {isUser && (
+                    <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-surface text-ink">
+                      <UserRound size={18} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
           </div>
+        )}
+      </div>
+
+      <div className="border-t border-hairline-soft bg-white/76 p-3 sm:p-4">
+        <div className="flex items-end gap-2 rounded-[1.5rem] border border-hairline bg-canvas p-2 shadow-[0_14px_40px_rgba(17,17,17,0.05)]">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            placeholder={hasProcessedDocs ? "Ask about your documents..." : "Process a document before chatting"}
+            disabled={!hasProcessedDocs || isLoading}
+            rows={1}
+            className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-3 py-3 text-base font-medium leading-6 text-ink placeholder:text-muted disabled:cursor-not-allowed"
+          />
+          {isLoading ? (
+            <button
+              onClick={stopStreaming}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-coral text-white transition duration-200 ease-out hover:-translate-y-0.5"
+              aria-label="Stop response"
+              title="Stop response"
+            >
+              <Square size={16} />
+            </button>
+          ) : (
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || !hasProcessedDocs}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-charcoal disabled:bg-hairline disabled:text-muted"
+              aria-label="Send message"
+              title="Send message"
+            >
+              <Send size={17} />
+            </button>
+          )}
         </div>
       </div>
     </div>
