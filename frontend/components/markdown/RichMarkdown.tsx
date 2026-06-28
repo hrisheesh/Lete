@@ -200,7 +200,7 @@ export default function RichMarkdown({
 
           // Tables
           table: ({ children }) => (
-            <div className="internal-scroll my-6 max-w-full overflow-x-auto rounded-xl border border-hairline bg-white shadow-sm transition-all duration-500 hover:-translate-y-[1px] hover:shadow-md">
+            <div className="internal-scroll my-6 max-w-full overflow-x-auto rounded-xl border border-hairline bg-white shadow-sm transition-all duration-300 hover:border-hairline-soft hover:shadow-md">
               <table className="w-full min-w-[40rem] border-collapse text-left text-sm">{children}</table>
             </div>
           ),

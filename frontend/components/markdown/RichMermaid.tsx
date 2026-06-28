@@ -76,7 +76,7 @@ export default function RichMermaid({ chart }: { chart: string }) {
   if (isRendering) {
     return (
       <div className="my-6 flex items-center justify-center rounded-2xl border border-dashed border-hairline bg-surface py-8 text-sm font-bold text-steel shadow-sm">
-        <div ref={renderHostRef} className="absolute -left-[9999px] -top-[9999px] opacity-0" aria-hidden="true" />
+        <div ref={renderHostRef} className="absolute -left-[9999px] -top-[9999px] w-[1200px] opacity-0" aria-hidden="true" />
         <span className="mr-1 animate-pulse">Rendering Diagram</span>
         <span className="animate-bounce">.</span>
         <span className="animate-bounce [animation-delay:150ms]">.</span>
@@ -88,7 +88,7 @@ export default function RichMermaid({ chart }: { chart: string }) {
   if (error) {
     return (
       <div className="my-6 overflow-hidden rounded-2xl border border-brand-coral/20 bg-brand-coral/10 p-5 text-sm font-bold text-brand-coral shadow-[0_8px_24px_rgba(255,100,100,0.06)]">
-        <div ref={renderHostRef} className="absolute -left-[9999px] -top-[9999px] opacity-0" aria-hidden="true" />
+        <div ref={renderHostRef} className="absolute -left-[9999px] -top-[9999px] w-[1200px] opacity-0" aria-hidden="true" />
         <div className="mb-2 font-black uppercase tracking-wider text-brand-coral-deep">⚠ Diagram Syntax Error</div>
         <pre className="internal-scroll max-h-[300px] overflow-auto whitespace-pre-wrap rounded-xl bg-white/75 p-4 text-[12px] font-mono font-medium leading-relaxed text-charcoal shadow-inner">
           {error}
@@ -106,11 +106,11 @@ export default function RichMermaid({ chart }: { chart: string }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-      className="internal-scroll my-6 max-h-[32rem] overflow-auto rounded-2xl border border-hairline bg-white p-6 shadow-sm transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-xl [&_svg_path]:transition-all [&_svg_path]:duration-300 hover:[&_svg_.node_rect]:fill-brand-blue/5 hover:[&_svg_.node_rect]:stroke-brand-blue"
+      className="internal-scroll my-6 max-h-[40rem] overflow-auto rounded-2xl border border-hairline bg-white p-6 shadow-sm transition-all duration-300 ease-out hover:border-hairline-soft hover:shadow-md [&_svg_path]:transition-all [&_svg_path]:duration-300 hover:[&_svg_.node_rect]:fill-brand-blue/5 hover:[&_svg_.node_rect]:stroke-brand-blue"
     >
-      <div ref={renderHostRef} className="absolute -left-[9999px] -top-[9999px] opacity-0" aria-hidden="true" />
+      <div ref={renderHostRef} className="absolute -left-[9999px] -top-[9999px] w-[1200px] opacity-0 pointer-events-none" aria-hidden="true" />
       <div
-        className="flex w-full justify-center [&_svg]:h-auto [&_svg]:max-h-[28rem] [&_svg]:min-w-fit"
+        className="flex w-full justify-center [&_svg]:h-auto [&_svg]:max-h-[36rem] [&_svg]:w-auto [&_svg]:max-w-none"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     </motion.div>

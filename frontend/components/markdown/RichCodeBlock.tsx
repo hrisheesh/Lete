@@ -23,7 +23,7 @@ export default function RichCodeBlock({
 
   return (
     <div 
-      className="my-6 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm transition-all duration-500 hover:shadow-md group"
+      className="my-6 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm transition-all duration-300 hover:shadow-md group"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
