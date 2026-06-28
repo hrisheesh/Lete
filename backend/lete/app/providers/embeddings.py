@@ -42,13 +42,17 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 def get_embedding(conn, text: str) -> list[float]:
     """Helper to get a single embedding using current settings."""
     from lete.app.api.settings import get_settings
+    from lete.app.providers.utils import get_provider_base_url
+    
     prov_settings = get_settings(conn)
+    
+    base_url = get_provider_base_url(prov_settings.provider_type, prov_settings.base_url)
     
     # We only support OpenAI embedding provider for now based on previous code
     embed_provider = OpenAIEmbeddingProvider(
         api_key=prov_settings.api_key or "",
         model_name=prov_settings.embedding_model_name or "text-embedding-3-small",
-        base_url=prov_settings.base_url
+        base_url=base_url
     )
     
     embeddings = embed_provider.embed([text])

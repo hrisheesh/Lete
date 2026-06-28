@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, SlidersHorizontal, XCircle } from "lucide-react";
 
-type ProviderType = "local" | "openai" | "openrouter" | "anthropic";
+type ProviderType = "local" | "openai" | "openrouter" | "anthropic" | "groq" | "mistral" | "huggingface" | "nvidia";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
@@ -136,6 +136,10 @@ export default function ProviderSettingsForm() {
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
               <option value="openrouter">OpenRouter</option>
+              <option value="groq">Groq</option>
+              <option value="mistral">Mistral</option>
+              <option value="huggingface">HuggingFace</option>
+              <option value="nvidia">NVIDIA (NIM)</option>
               <option value="local">Local (Ollama / LM Studio)</option>
             </select>
           </div>

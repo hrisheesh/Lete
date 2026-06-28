@@ -7,6 +7,7 @@ from lete.app.generation.packer import ContextPacker
 from lete.app.providers.openai_provider import OpenAIProvider
 from lete.app.providers.anthropic_provider import AnthropicProvider
 from lete.app.repositories.provider_settings import ProviderSettingsRepository
+from lete.app.providers.utils import get_provider_base_url, is_openai_compatible
 from lete.app.config.settings import settings
 
 class GenerationService:
@@ -17,8 +18,9 @@ class GenerationService:
         self.settings_repo = ProviderSettingsRepository(conn)
         
     def _get_provider(self, provider_type: str, base_url: str, api_key: str):
-        if provider_type in ["openai", "openrouter", "local"]:
-            return OpenAIProvider(api_key=api_key or "", base_url=base_url)
+        if is_openai_compatible(provider_type):
+            resolved_base_url = get_provider_base_url(provider_type, base_url)
+            return OpenAIProvider(api_key=api_key or "", base_url=resolved_base_url)
         elif provider_type == "anthropic":
             return AnthropicProvider(api_key=api_key)
         else:

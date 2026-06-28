@@ -7,6 +7,7 @@ from lete.app.schemas.provider_settings import ProviderSettingsCreate, ProviderS
 from lete.app.repositories.provider_settings import ProviderSettingsRepository
 from lete.app.providers.openai_provider import OpenAIProvider
 from lete.app.providers.anthropic_provider import AnthropicProvider
+from lete.app.providers.utils import get_provider_base_url, is_openai_compatible
 
 router = APIRouter()
 
@@ -53,10 +54,11 @@ def update_provider_settings(
 @router.post("/test-provider")
 def test_provider_connection(settings_in: ProviderSettingsCreate):
     try:
-        if settings_in.provider_type in ["openai", "openrouter", "local"]:
+        if is_openai_compatible(settings_in.provider_type):
+            base_url = get_provider_base_url(settings_in.provider_type, settings_in.base_url)
             provider = OpenAIProvider(
                 api_key=settings_in.api_key or "",
-                base_url=settings_in.base_url
+                base_url=base_url
             )
         elif settings_in.provider_type == "anthropic":
             if not settings_in.api_key:
