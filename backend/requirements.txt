@@ -10,3 +10,5 @@ python-multipart>=0.0.19
 PyMuPDF>=1.24.5
 python-docx>=1.1.2
 sqlite-vec==0.1.6
+openpyxl>=3.1.0
+python-pptx>=1.0.0

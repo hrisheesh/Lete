@@ -28,6 +28,18 @@ async def upload_document(
 
     repo = DocumentRepository(conn)
     
+    # --- Early validation: reject unsupported file types before touching disk ---
+    from lete.app.parsing.registry import ParserRegistry
+    filename = file.filename or "unknown"
+    ext = filename.split(".")[-1].lower() if "." in filename else ""
+    if not ParserRegistry.is_supported(ext):
+        supported = ", ".join(sorted(ParserRegistry.SUPPORTED_EXTENSIONS))
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported file type '.{ext}'. Supported formats: {supported}"
+        )
+    # --------------------------------------------------------------------------
+    
     # Ensure directory exists
     workspace_dir = os.path.join(UPLOAD_DIR, workspace_id)
     os.makedirs(workspace_dir, exist_ok=True)
